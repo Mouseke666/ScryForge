@@ -35,7 +35,13 @@ internal class Program
         copy.CopyFile(Path.Combine(AppConfig.BasePath, "cards.txt"), Path.Combine(AppConfig.ArtDownloaderPath, "cards.txt"));
 
         Console.WriteLine("Downloading...");
-        await downloader.DownloadArtAsync();
+        bool downloadSucceeded = await downloader.DownloadArtAsync();
+
+        if (!downloadSucceeded)
+        {
+            Console.WriteLine("Download failed or was cancelled. Stopping application.");
+            return;
+        }
 
         Console.WriteLine("Upscaling...");
         await upscaler.RunUpscalerAsync();
