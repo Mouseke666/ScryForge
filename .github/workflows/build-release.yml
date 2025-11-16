@@ -1,16 +1,16 @@
-name: Build and Release
+name: Build and Release ScryForge
 
 on:
   push:
     tags:
-      - 'v*.*.*'   # Trigger bij nieuwe tag zoals v1.0.0
+      - 'v*.*.*'  # Trigger bij nieuwe tags zoals v1.0.0, v1.0.1
 
 jobs:
   build:
     runs-on: windows-latest
 
     steps:
-    - name: Checkout repo
+    - name: Checkout repository
       uses: actions/checkout@v3
 
     - name: Setup .NET
@@ -24,16 +24,22 @@ jobs:
     - name: Build Release
       run: dotnet publish -c Release -r win-x64 --self-contained true -o publish
 
-    - name: Create release
+    - name: Zip build output
+      run: |
+        Compress-Archive -Path publish\* -DestinationPath ScryForge_v${{ github.ref_name }}.zip
+
+    - name: Create GitHub release
       uses: softprops/action-gh-release@v1
       with:
-        tag_name: ${{ github.ref }}
+        tag_name: ${{ github.ref_name }}
+        name: ScryForge ${{ github.ref_name }}
+        body: "Automatische release van ScryForge"
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Upload build artifact
+    - name: Upload release artifact
       uses: softprops/action-gh-release@v1
       with:
-        files: publish/**/*
+        files: ScryForge_v${{ github.ref_name }}.zip
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
