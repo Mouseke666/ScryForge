@@ -28,9 +28,9 @@ jobs:
       - name: Build project
         run: dotnet build --configuration Release --no-restore
 
-      # Publish project to specific folder
+      # Publish project to specific folder (self-contained)
       - name: Publish project
-        run: dotnet publish --configuration Release -r win-x64 --self-contained false --output bin/Release/net9.0/win-x64/publish
+        run: dotnet publish --configuration Release -r win-x64 --self-contained true --output bin/Release/net9.0/win-x64/publish
 
       # Compress publish folder into a ZIP
       - name: Compress build output
