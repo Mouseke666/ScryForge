@@ -1,0 +1,31 @@
+# Build folders
+bin/
+obj/
+
+# User-specific files
+*.user
+*.suo
+
+# Visual Studio & IDE folders
+.vs/
+.vscode/
+.idea/
+
+# NuGet packages
+*.nupkg
+packages/
+
+# Logs
+*.log
+
+# Configuration files that shouldn't be committed
+*.env
+*.secret
+appsettings.Development.json
+
+# Rider / JetBrains
+*.sln.iml
+
+# Temporary files
+*.tmp
+*.cache
