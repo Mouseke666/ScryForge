@@ -24,20 +24,25 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore
 
+      # Clean previous builds
+      - name: Clean previous builds
+        run: dotnet clean
+
       # Build project in Release mode
       - name: Build project
         run: dotnet build --configuration Release --no-restore
 
-      # Publish project to specific folder (self-contained, single-file)
+      # Publish project to self-contained single-file exe with content folders
       - name: Publish project
-        run: dotnet publish --configuration Release -r win-x64 --self-contained true /p:PublishSingleFile=true --output bin/Release/net9.0/win-x64/publish
+        run: dotnet publish --configuration Release -r win-x64 --self-contained true /p:PublishSingleFile=true /p:PublishTrimmed=true /p:EnableCompressionInSingleFile=true --output bin/Release/net9.0/win-x64/publish
 
-      # Compress publish folder into a ZIP
+      # Compress entire publish folder into a ZIP (exe + content folders + cards.txt)
       - name: Compress build output
         shell: pwsh
         run: |
+          $publishFolder = "bin/Release/net9.0/win-x64/publish/*"
           $zipName = "ScryForge_${{ github.ref_name }}.zip"
-          Compress-Archive -Path bin/Release/net9.0/win-x64/publish/* -DestinationPath $zipName
+          Compress-Archive -Path $publishFolder -DestinationPath $zipName
           Write-Output "ZIP created: $zipName"
 
       # Create GitHub release and upload ZIP
