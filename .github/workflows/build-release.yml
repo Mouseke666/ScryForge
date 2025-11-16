@@ -3,43 +3,50 @@ name: Build and Release ScryForge
 on:
   push:
     tags:
-      - 'v*.*.*'  # Trigger bij nieuwe tags zoals v1.0.0, v1.0.1
+      - 'v*.*.*'  # Trigger on any new tag starting with v
 
 jobs:
   build:
     runs-on: windows-latest
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
+      # Checkout repository
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v3
-      with:
-        dotnet-version: '7.0.x'  # Pas aan naar jouw .NET versie
+      # Setup .NET SDK
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '9.0.x'
 
-    - name: Restore dependencies
-      run: dotnet restore
+      # Restore dependencies
+      - name: Restore dependencies
+        run: dotnet restore
 
-    - name: Build Release
-      run: dotnet publish -c Release -r win-x64 --self-contained true -o publish
+      # Build project in Release mode
+      - name: Build project
+        run: dotnet build --configuration Release --no-restore
 
-    - name: Zip build output
-      run: |
-        Compress-Archive -Path publish\* -DestinationPath ScryForge_v${{ github.ref_name }}.zip
+      # Publish project to specific folder
+      - name: Publish project
+        run: dotnet publish --configuration Release -r win-x64 --self-contained false --output bin/Release/net9.0/win-x64/publish
 
-    - name: Create GitHub release
-      uses: softprops/action-gh-release@v1
-      with:
-        tag_name: ${{ github.ref_name }}
-        name: ScryForge ${{ github.ref_name }}
-        body: "Automatische release van ScryForge"
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # Compress publish folder into a ZIP
+      - name: Compress build output
+        shell: pwsh
+        run: |
+          $zipName = "ScryForge_${{ github.ref_name }}.zip"
+          Compress-Archive -Path bin/Release/net9.0/win-x64/publish/* -DestinationPath $zipName
+          Write-Output "ZIP created: $zipName"
 
-    - name: Upload release artifact
-      uses: softprops/action-gh-release@v1
-      with:
-        files: ScryForge_v${{ github.ref_name }}.zip
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # Create GitHub release and upload ZIP
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ScryForge ${{ github.ref_name }}
+          body: "Automatic release of ScryForge"
+          files: "ScryForge_${{ github.ref_name }}.zip"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
