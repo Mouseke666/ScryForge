@@ -54,7 +54,13 @@ namespace MTGArtDownloader.Services
             // Wacht tot het proces klaar is
             await process.WaitForExitAsync();
 
+            if (workingDir == null)
+            {
+                throw new InvalidOperationException("workingDir cannot be null.");
+            }
+
             var printMeFile = Path.Combine(workingDir, "_printme.pdf");
+
             var projectPdf = Path.Combine(workingDir, $"{project}.pdf");
 
             if (File.Exists(printMeFile))

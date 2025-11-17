@@ -69,7 +69,7 @@ namespace MTGArtDownloader.Services
                         SetCode = setCode,
                         Number = number,
                         FrontFileName = fileName,
-                        BackFileName = null
+                        BackFileName = ""
                     });
                 }
             }

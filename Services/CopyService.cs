@@ -119,17 +119,20 @@ namespace MTGArtDownloader.Services
                 Console.WriteLine($"Source file does not exist: {sourceFile}");
                 return;
             }
-
-            var destPath = Path.Combine(Path.GetDirectoryName(destinationFolder), Path.GetFileName(sourceFile));
-
-            try
+            var path1 = Path.GetDirectoryName(destinationFolder);
+            var path2 = Path.GetFileName(sourceFile);
+            if (!string.IsNullOrEmpty(path1) && string.IsNullOrEmpty(path2))
             {
-                File.Copy(sourceFile, destPath, overwrite);
-                Console.WriteLine($"File copied: {sourceFile} -> {destPath}");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error copying {sourceFile} to {destPath}: {ex.Message}");
+                var destPath = Path.Combine(path1, path2);
+                try
+                {
+                    File.Copy(sourceFile, destPath, overwrite);
+                    Console.WriteLine($"File copied: {sourceFile} -> {destPath}");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error copying {sourceFile} to {destPath}: {ex.Message}");
+                }
             }
         }
     }
