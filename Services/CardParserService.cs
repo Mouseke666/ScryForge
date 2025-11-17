@@ -54,7 +54,7 @@ namespace MTGArtDownloader.Services
                         continue; // flipcard afgehandeld
                     }
                 }
-
+                else
                 // --- reguliere kaart ---
                 {
                     string pattern = $"{fullName}*[{setCode}]*{{{number}}}*.png";

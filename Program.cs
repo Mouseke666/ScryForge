@@ -81,7 +81,7 @@ internal class Program
             Console.WriteLine("No flip cards found, skip flip PDF generation.");
         }
         Console.WriteLine("Mission was a great success!");
-        Console.ReadLine();
+        //Console.ReadLine();
         openPdf.OpenPdf(Path.Combine(AppConfig.BasePath, "default.pdf"));
     }
 }

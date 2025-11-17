@@ -3,7 +3,7 @@ name: Build and Release ScryForge
 on:
   push:
     tags:
-      - 'v*.*.*'  # Trigger on any new tag starting with v
+      - 'v*.*.*'  # Trigger on version tags
 
 jobs:
   build:
@@ -24,28 +24,31 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore
 
-      # Clean previous builds
-      - name: Clean previous builds
-        run: dotnet clean
-
-      # Build project in Release mode
+      # Build in Release mode (normal build, no single-file)
       - name: Build project
         run: dotnet build --configuration Release --no-restore
 
-      # Publish project to self-contained single-file exe with content folders
+      # PUBLISH with all bundling settings (only here!)
       - name: Publish project
-        run: dotnet publish --configuration Release -r win-x64 --self-contained true /p:PublishSingleFile=true /p:PublishTrimmed=true /p:EnableCompressionInSingleFile=true --output bin/Release/net9.0/win-x64/publish
+        run: dotnet publish ScryForge.csproj `
+          --configuration Release `
+          -r win-x64 `
+          --self-contained true `
+          /p:PublishSingleFile=true `
+          /p:PublishTrimmed=true `
+          /p:EnableCompressionInSingleFile=true `
+          /p:IncludeAllContentForSelfExtract=false `
+          --output ./publish
 
-      # Compress entire publish folder into a ZIP (exe + content folders + cards.txt)
+      # Compress output
       - name: Compress build output
         shell: pwsh
         run: |
-          $publishFolder = "bin/Release/net9.0/win-x64/publish/*"
           $zipName = "ScryForge_${{ github.ref_name }}.zip"
-          Compress-Archive -Path $publishFolder -DestinationPath $zipName
+          Compress-Archive -Path "./publish/*" -DestinationPath $zipName
           Write-Output "ZIP created: $zipName"
 
-      # Create GitHub release and upload ZIP
+      # Release artifact
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:

@@ -16,6 +16,10 @@ namespace MTGArtDownloader.Services
 
             foreach (var card in cards)
             {
+                if (card.Name == "Arcane Signet")
+                {
+
+                }
                 // Zoek het bronbestand dat begint met de kaartnaam
                 var files = Directory.GetFiles(folder, $"{card.FrontFileName}");
 
