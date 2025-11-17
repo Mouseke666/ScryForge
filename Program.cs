@@ -40,6 +40,7 @@ internal class Program
         if (!downloadSucceeded)
         {
             Console.WriteLine("Download failed or was cancelled. Stopping application.");
+            Console.ReadLine();
             return;
         }
 
