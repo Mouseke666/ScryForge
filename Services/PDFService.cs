@@ -23,8 +23,8 @@ namespace MTGArtDownloader.Services
             // Start het proces via cmd /c zodat het exact CMD-gedrag volgt
             var psi = new ProcessStartInfo
             {
-                FileName = "cmd.exe",
-                Arguments = arguments,
+                FileName = exe,
+                Arguments = $"--render --project \"{project}.json\"",
                 WorkingDirectory = workingDir,
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
