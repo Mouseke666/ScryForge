@@ -3,6 +3,7 @@ namespace ScryForge.Services
     public class PipelineService
     {
         private readonly CleanupService cleanup;
+        private readonly OpenFolderService openfolder;
         private readonly CardParserService parser;
         private readonly DownloaderService downloader;
         private readonly UpscalerService upscaler;
@@ -13,6 +14,7 @@ namespace ScryForge.Services
 
         public PipelineService(
             CleanupService cleanup,
+            OpenFolderService openfolder,
             CardParserService parser,
             DownloaderService downloader,
             UpscalerService upscaler,
@@ -22,6 +24,7 @@ namespace ScryForge.Services
             PDFOpenService openPdf)
         {
             this.cleanup = cleanup;
+            this.openfolder = openfolder;
             this.parser = parser;
             this.downloader = downloader;
             this.upscaler = upscaler;
@@ -111,7 +114,8 @@ namespace ScryForge.Services
 
             Console.WriteLine("Mission was a great success!");
 
-            openPdf.OpenPdf(Path.Combine(AppConfig.BasePath, "default.pdf"));
+            //openPdf.OpenPdf(Path.Combine(AppConfig.BasePath, "default.pdf"));
+            openfolder.OpenFolder(AppConfig.BasePath);
         }
     }
 }

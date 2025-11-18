@@ -10,6 +10,7 @@ internal class Program
             .ConfigureServices((context, services) =>
             {
                 services.AddSingleton<CleanupService>();
+                services.AddSingleton<OpenFolderService>();
                 services.AddSingleton<CardParserService>();
                 services.AddSingleton<DownloaderService>();
                 services.AddSingleton<UpscalerService>();
