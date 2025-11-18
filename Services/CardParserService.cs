@@ -5,76 +5,70 @@ namespace ScryForge.Services
 {
     public class CardParserService
     {
+        private static readonly Regex CardLineRegex = new(
+            @"^\s*(\d+)\s+(.+?)\s+\(([A-Z0-9]+)\)\s+(\d+)\s*$",
+            RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
         public List<CardInfo> ParseCards(string filePath)
         {
-            var list = new List<CardInfo>();
-            if (!File.Exists(filePath)) return list;
+            var cards = new List<CardInfo>();
+            if (!File.Exists(filePath)) return cards;
 
-            var regex = new Regex(@"^\s*(\d+)\s+(.+?)\s+\(([A-Z0-9]+)\)\s+(\d+)\s*$");
+            var folder = AppConfig.UpscaledFolder;
+            var lines = File.ReadAllLines(filePath);
 
-            string folder = AppConfig.UpscaledFolder;
-
-            foreach (var line in File.ReadAllLines(filePath))
+            foreach (var line in lines)
             {
-                var m = regex.Match(line);
-                if (!m.Success) continue;
+                var match = CardLineRegex.Match(line);
+                if (!match.Success) continue;
 
-                int qty = int.Parse(m.Groups[1].Value);
-                string fullName = m.Groups[2].Value.Trim();  // "Birgi ... / Harnfel ..."
-                string setCode = m.Groups[3].Value.Trim();
-                string number = m.Groups[4].Value.Trim();
+                var quantity = int.Parse(match.Groups[1].ValueSpan);
+                var fullName = match.Groups[2].Value.Trim();
+                var setCode = match.Groups[3].Value.Trim();
+                var number = match.Groups[4].Value.Trim();
 
-                string[] names = fullName.Split(" / ");
+                var names = fullName.Split(" / ", 2, StringSplitOptions.TrimEntries);
 
-                // Mogelijke flipcard
-                if (names.Length > 1)
+                if (names.Length == 2)
                 {
-                    string frontName = names[0];
-                    string backName = names[1];
+                    var frontFile = FindFile(folder, names[0], setCode, number);
+                    var backFile = FindFile(folder, names[1], setCode, number);
 
-                    string frontPattern = $"{frontName}*[{setCode}]*{{{number}}}*.png";
-                    string backPattern = $"{backName}*[{setCode}]*{{{number}}}*.png";
-
-                    var frontMatches = Directory.GetFiles(folder, frontPattern);
-                    var backMatches = Directory.GetFiles(folder, backPattern);
-
-                    if (frontMatches.Length > 0 && backMatches.Length > 0)
+                    if (frontFile != null && backFile != null)
                     {
-                        // --- echte flipcard ---
-                        list.Add(new CardInfo
+                        cards.Add(new CardInfo
                         {
-                            Quantity = qty,
+                            Quantity = quantity,
                             Name = fullName,
                             SetCode = setCode,
                             Number = number,
-                            FrontFileName = Path.GetFileName(frontMatches[0]),
-                            BackFileName = Path.GetFileName(backMatches[0])
+                            FrontFileName = Path.GetFileName(frontFile),
+                            BackFileName = Path.GetFileName(backFile)
                         });
-
-                        continue; // flipcard afgehandeld
+                        continue;
                     }
                 }
-                else
-                // --- reguliere kaart ---
+
+                var singleFile = FindFile(folder, names[0], setCode, number);
+                cards.Add(new CardInfo
                 {
-                    string pattern = $"{fullName}*[{setCode}]*{{{number}}}*.png";
-                    var matches = Directory.GetFiles(folder, pattern);
-
-                    string fileName = matches.Length > 0 ? Path.GetFileName(matches[0]) : "";
-
-                    list.Add(new CardInfo
-                    {
-                        Quantity = qty,
-                        Name = fullName,
-                        SetCode = setCode,
-                        Number = number,
-                        FrontFileName = fileName,
-                        BackFileName = ""
-                    });
-                }
+                    Quantity = quantity,
+                    Name = fullName,
+                    SetCode = setCode,
+                    Number = number,
+                    FrontFileName = singleFile != null ? Path.GetFileName(singleFile) : "",
+                    BackFileName = ""
+                });
             }
 
-            return list;
+            return cards;
+        }
+
+        private static string? FindFile(string folder, string name, string setCode, string number)
+        {
+            var pattern = $"{name}*[{setCode}]*{{{number}}}*.png";
+            var files = Directory.GetFiles(folder, pattern, SearchOption.TopDirectoryOnly);
+            return files.FirstOrDefault();
         }
     }
 }

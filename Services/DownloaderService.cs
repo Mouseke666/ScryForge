@@ -11,14 +11,19 @@ namespace ScryForge.Services
             if (!File.Exists(exe))
             {
                 Console.WriteLine("Downloader exe missing: " + exe);
-                return false; // teruggeven dat het niet gelukt is
+                return false;
             }
 
             var psi = new ProcessStartInfo
             {
                 FileName = exe,
                 WorkingDirectory = AppConfig.ArtDownloaderPath,
-                UseShellExecute = true,
+                UseShellExecute = false,                    // nodig voor CreateNoWindow
+                CreateNoWindow = true,                       // cruciaal: geen console venster
+                WindowStyle = ProcessWindowStyle.Hidden,     // extra laag veiligheid
+                                                             // Als je ooit logs wilt zien (handig bij debuggen):
+                                                             // RedirectStandardOutput = true,
+                                                             // RedirectStandardError = true,
             };
 
             try
@@ -26,28 +31,28 @@ namespace ScryForge.Services
                 using var process = Process.Start(psi);
                 if (process == null)
                 {
-                    Console.WriteLine("Could not start the process.");
+                    Console.WriteLine("Could not start the downloader process.");
                     return false;
                 }
 
+                // Wacht netjes tot hij klaar is (zonder blocking thread)
                 await process.WaitForExitAsync();
+
+                // Optioneel: check exit code als de downloader die netjes zet
+                return process.ExitCode == 0;
             }
             catch (Win32Exception ex) when (ex.NativeErrorCode == 1223)
             {
-                Console.WriteLine("The external application was blocked by Windows SmartScreen or cancelled.");
-                Console.WriteLine("To allow it to run:");
-                Console.WriteLine("1. Open File Explorer and navigate to: " + AppConfig.ArtDownloaderPath);
-                Console.WriteLine("2. Right-click 'MTG Art Downloader.exe' → Properties → check 'Unblock' → Apply → OK");
-                Console.WriteLine("The application will now stop.");
-                return false; // geef false terug zodat Program kan stoppen
+                // User cancelled UAC / SmartScreen
+                Console.WriteLine("Download cancelled by user (UAC/SmartScreen).");
+                Console.WriteLine("To fix: Right-click MTG Art Downloader.exe → Properties → Unblock");
+                return false;
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error starting external process: " + ex.Message);
+                Console.WriteLine($"Error starting downloader: {ex.Message}");
                 return false;
             }
-
-            return true; // proces is succesvol uitgevoerd
         }
     }
 }

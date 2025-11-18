@@ -1,18 +1,23 @@
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+
 namespace ScryForge.Services
 {
-    public class PipelineService
+    public class PipelineService : BackgroundService
     {
-        private readonly CleanupService cleanup;
-        private readonly OpenFolderService openfolder;
-        private readonly CardParserService parser;
-        private readonly DownloaderService downloader;
-        private readonly UpscalerService upscaler;
-        private readonly CopyService copy;
-        private readonly FlipService flips;
-        private readonly PDFService pdf;
-        private readonly PDFOpenService openPdf;
+        private readonly ILogger<PipelineService> _logger;
+        private readonly CleanupService _cleanup;
+        private readonly OpenFolderService _openfolder;
+        private readonly CardParserService _parser;
+        private readonly DownloaderService _downloader;
+        private readonly UpscalerService _upscaler;
+        private readonly CopyService _copy;
+        private readonly FlipService _flips;
+        private readonly PDFService _pdf;
+        private readonly PDFOpenService _openPdf;
 
         public PipelineService(
+            ILogger<PipelineService> logger,
             CleanupService cleanup,
             OpenFolderService openfolder,
             CardParserService parser,
@@ -23,99 +28,125 @@ namespace ScryForge.Services
             PDFService pdf,
             PDFOpenService openPdf)
         {
-            this.cleanup = cleanup;
-            this.openfolder = openfolder;
-            this.parser = parser;
-            this.downloader = downloader;
-            this.upscaler = upscaler;
-            this.copy = copy;
-            this.flips = flips;
-            this.pdf = pdf;
-            this.openPdf = openPdf;
+            _logger = logger;
+            _cleanup = cleanup;
+            _openfolder = openfolder;
+            _parser = parser;
+            _downloader = downloader;
+            _upscaler = upscaler;
+            _copy = copy;
+            _flips = flips;
+            _pdf = pdf;
+            _openPdf = openPdf;
         }
 
-        public async Task RunAsync()
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            Console.WriteLine(@"
+            _logger.LogInformation("PipelineService started – beginning execution...");
+
+            try
+            {
+                await RunPipelineAsync(stoppingToken);
+                _logger.LogInformation("Pipeline completed successfully!");
+            }
+            catch (OperationCanceledException)
+            {
+                _logger.LogInformation("Pipeline stopped due to shutdown request.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unrecoverable error in the pipeline. Application will terminate.");
+            }
+        }
+
+        private async Task RunPipelineAsync(CancellationToken ct)
+        {
+            // Epic banner – nu ook via logger (blijft zichtbaar in console!)
+            var banner = @"
             _________                    ___________                         
             /   _____/ ___________ ___.__.\_   _____/__________  ____   ____  
             \_____  \_/ ___\_  __ <   |  | |    __)/  _ \_  __ \/ ___\_/ __ \ 
             /        \  \___|  | \/\___  | |     \(  <_> )  | \/ /_/  >  ___/ 
             /_______  /\___  >__|   / ____| \___  / \____/|__|  \___  / \___  >
                     \/     \/       \/          \/             /_____/      \/ 
-        ");
+            ".Trim();
 
-            Console.WriteLine("Cleaning...");
-            cleanup.CleanDirectory(AppConfig.DownloadedFolder);
-            cleanup.CleanDirectory(AppConfig.UpscaledFolder);
-            cleanup.DeleteFile(Path.Combine(AppConfig.BasePath, "default.pdf"));
-            cleanup.DeleteFile(Path.Combine(AppConfig.BasePath, "flips.pdf"));
+            // Log elke regel apart zodat het netjes op meerdere regels komt
+            foreach (var line in banner.Split('\n', StringSplitOptions.TrimEntries))
+                _logger.LogInformation(line);
 
-            copy.CopyFile(
+            _logger.LogInformation("Pipeline started");
+
+            _logger.LogInformation("Step 1/10 – Cleaning up directories...");
+            _cleanup.CleanDirectory(AppConfig.DownloadedFolder);
+            _cleanup.CleanDirectory(AppConfig.UpscaledFolder);
+            _cleanup.DeleteFile(Path.Combine(AppConfig.BasePath, "default.pdf"));
+            _cleanup.DeleteFile(Path.Combine(AppConfig.BasePath, "flips.pdf"));
+
+            _copy.CopyFile(
                 Path.Combine(AppConfig.BasePath, "cards.txt"),
-                Path.Combine(AppConfig.ArtDownloaderPath, "cards.txt")
-            );
+                Path.Combine(AppConfig.ArtDownloaderPath, "cards.txt"));
 
-            Console.WriteLine("Downloading...");
-            bool downloadSucceeded = await downloader.DownloadArtAsync();
+            _logger.LogInformation("Step 2/10 – Downloading card art... (this could take a while)");
+            bool downloadSucceeded = await _downloader.DownloadArtAsync();
 
-            if (!downloadSucceeded)
+            if (!downloadSucceeded || ct.IsCancellationRequested)
             {
-                Console.WriteLine("Download failed or was cancelled. Stopping application.");
+                _logger.LogWarning("Download failed or was cancelled. Pipeline stopped.");
                 return;
             }
 
-            copy.CopyFilesToRoot(AppConfig.ScryfallSource);
+            _copy.CopyFilesToRoot(AppConfig.ScryfallSource);
 
-            Console.WriteLine("Upscaling...");
-            await upscaler.RunUpscalerAsync();
+            _logger.LogInformation("Step 3/10 – Upscaling images... (this could take a while)");
+            await _upscaler.RunUpscalerAsync();
 
-            Console.WriteLine("Parsing cards...");
-            var cards = parser.ParseCards(AppConfig.CardsFile);
+            _logger.LogInformation("Step 4/10 – Parsing cards.txt...");
+            var cards = _parser.ParseCards(AppConfig.CardsFile);
 
-            Console.WriteLine("Duplicating cards...");
-            copy.DuplicateCards(cards);
+            _logger.LogInformation("Step 5/10 – Duplicating double-faced cards...");
+            _copy.DuplicateCards(cards);
 
-            Console.WriteLine("Handling Flips...");
-            flips.ProcessFlipCards(cards);
+            _logger.LogInformation("Step 6/10 – Processing flip cards...");
+            _flips.ProcessFlipCards(cards);
 
-            Console.WriteLine("Generating PDF");
-            await pdf.RunAsync("default");
+            _logger.LogInformation("Step 7/10 – Generating default.pdf...");
+            await _pdf.RunAsync("default");
 
-            Console.WriteLine("Cleanup default PDF files");
-            cleanup.CleanDirectory(AppConfig.UpscaledFolder, "flips");
+            _logger.LogInformation("Step 8/10 – Cleaning upscaled folder (excluding flip cards)...");
+            _cleanup.CleanDirectory(AppConfig.UpscaledFolder, "flips");
 
-            Console.WriteLine("Copy finished PDF to root");
-            copy.MoveFile(
+            _logger.LogInformation("Step 9/10 – Moving default.pdf to root folder...");
+            _copy.MoveFile(
                 Path.Combine(AppConfig.PdfPath, "default.pdf"),
-                Path.Combine(AppConfig.BasePath, "default.pdf")
-            );
+                Path.Combine(AppConfig.BasePath, "default.pdf"));
 
             if (Directory.Exists(AppConfig.FlipsFolder) &&
                 Directory.GetFiles(AppConfig.FlipsFolder).Length > 0)
             {
-                Console.WriteLine("Copy flip cards to main");
-                copy.CopyFolderFiles(AppConfig.FlipsFolder, AppConfig.UpscaledFolder);
-
-                Console.WriteLine("Generating flips PDF");
-                await pdf.RunAsync("flips");
-
-                copy.MoveFile(
+                _logger.LogInformation("Flip cards detected → generating flips.pdf...");
+                _copy.CopyFolderFiles(AppConfig.FlipsFolder, AppConfig.UpscaledFolder);
+                await _pdf.RunAsync("flips");
+                _copy.MoveFile(
                     Path.Combine(AppConfig.PdfPath, "flips.pdf"),
-                    Path.Combine(AppConfig.BasePath, "flips.pdf")
-                );
-
-                cleanup.CleanDirectory(AppConfig.UpscaledFolder);
+                    Path.Combine(AppConfig.BasePath, "flips.pdf"));
+                _cleanup.CleanDirectory(AppConfig.UpscaledFolder);
             }
             else
             {
-                Console.WriteLine("No flip cards found, skipping flip PDF generation.");
+                _logger.LogInformation("No flip cards found – skipping flips.pdf generation.");
             }
 
-            Console.WriteLine("Mission was a great success!");
+            _logger.LogInformation("Mission was a great success!");
 
-            //openPdf.OpenPdf(Path.Combine(AppConfig.BasePath, "default.pdf"));
-            openfolder.OpenFolder(AppConfig.BasePath);
+            // Map openen zonder console output
+            _openfolder.OpenFolder(AppConfig.BasePath);
+        }
+
+        public override async Task StopAsync(CancellationToken cancellationToken)
+        {
+            _logger.LogInformation("PipelineService is shutting down...");
+            await base.StopAsync(cancellationToken);
         }
     }
 }

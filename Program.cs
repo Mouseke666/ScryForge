@@ -1,27 +1,34 @@
 ﻿using ScryForge.Services;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.DependencyInjection;
 
 internal class Program
 {
-    static async Task Main()
+    private static async Task Main(string[] args)
     {
-        var host = Host.CreateDefaultBuilder()
-            .ConfigureServices((context, services) =>
-            {
-                services.AddSingleton<CleanupService>();
-                services.AddSingleton<OpenFolderService>();
-                services.AddSingleton<CardParserService>();
-                services.AddSingleton<DownloaderService>();
-                services.AddSingleton<UpscalerService>();
-                services.AddSingleton<CopyService>();
-                services.AddSingleton<FlipService>();
-                services.AddSingleton<PDFService>();
-                services.AddSingleton<PDFOpenService>();
-                services.AddSingleton<PipelineService>();
-            })
-            .Build();
+        var builder = Host.CreateApplicationBuilder(args);
+        builder.Services.AddSingleton<CleanupService>();
+        builder.Services.AddSingleton<OpenFolderService>();
+        builder.Services.AddSingleton<CardParserService>();
+        builder.Services.AddSingleton<DownloaderService>();
+        builder.Services.AddSingleton<UpscalerService>();
+        builder.Services.AddSingleton<CopyService>();
+        builder.Services.AddSingleton<FlipService>();
+        builder.Services.AddSingleton<PDFService>();
+        builder.Services.AddSingleton<PDFOpenService>();
+        builder.Services.AddHostedService<PipelineService>();
+        builder.Logging.ClearProviders();
+        builder.Logging.AddSimpleConsole(options =>
+        {
+            options.IncludeScopes = false;
+            options.SingleLine = true;
+            options.TimestampFormat = "HH:mm:ss ";
+            options.UseUtcTimestamp = false;
+        });
 
-        await host.Services.GetRequiredService<PipelineService>().RunAsync();
+        builder.Logging.AddFilter("Microsoft.Hosting.Lifetime", LogLevel.None);
+
+        await builder.Build().RunAsync();
     }
 }
