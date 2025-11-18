@@ -1,6 +1,6 @@
 # ScryForge
 
-ScryForge is an automated pipeline for downloading, upscaling, and processing Magic: The Gathering cards. It generates PDF files from your cards and supports double-faced and flip cards.
+ScryForge is an automated pipeline for downloading, upscaling, and processing Magic: The Gathering cards. It generates PDF files from your cards and supportsflip cards.
 
 ## Features
 
