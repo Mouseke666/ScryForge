@@ -1,11 +1,7 @@
-using MTGArtDownloader.Models;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
+using ScryForge.Models;
 using System.Text.RegularExpressions;
 
-namespace MTGArtDownloader.Services
+namespace ScryForge.Services
 {
     public class FlipService
     {

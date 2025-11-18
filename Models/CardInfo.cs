@@ -1,5 +1,5 @@
 
-namespace MTGArtDownloader.Models
+namespace ScryForge.Models
 {
     public class CardInfo
     {

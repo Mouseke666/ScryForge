@@ -1,7 +1,4 @@
-using System;
-using System.IO;
-
-namespace MTGArtDownloader.Services
+namespace ScryForge.Services
 {
     public class CleanupService
     {

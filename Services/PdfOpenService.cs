@@ -1,8 +1,6 @@
-using System;
 using System.Diagnostics;
-using System.IO;
 
-namespace MTGArtDownloader.Services
+namespace ScryForge.Services
 {
     public class PDFOpenService
     {

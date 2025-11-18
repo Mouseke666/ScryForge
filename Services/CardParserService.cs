@@ -1,7 +1,7 @@
+using ScryForge.Models;
 using System.Text.RegularExpressions;
-using MTGArtDownloader.Models;
 
-namespace MTGArtDownloader.Services
+namespace ScryForge.Services
 {
     public class CardParserService
     {

@@ -1,9 +1,88 @@
-1 Sliver Queen (TPR) 211
-1 Aang, Swift Savior / Aang and La, Ocean's Fury (TLA) 204
+1 Ozai, the Phoenix King (TLA) 335
+1 Arcane Signet (PF25) 10
+1 Ashling, Flame Dancer (MH3) 115
+1 Avatar Roku, Firebender (TLE) 191
+1 Bender's Waterskin (TLA) 255
+1 Big Score (FIC) 290
 1 Birgi, God of Storytelling / Harnfel, Horn of Bounty (KHM) 123
+1 Blasphemous Act (40K) 204
+1 Blazemire Verge (PDSK) 256p
 1 Blightstep Pathway / Searstep Pathway (KHM) 252
-1 Brass's Tunnel-Grinder / Tecutlan, the Searing Rift (LCI) 373
+1 Blood Crypt (ECL) 262
+1 Blood for the Blood God! (40K) 108
+1 Bloodstained Mire (MH3) 216
+1 Bojuka Bog (EOC) 149
+1 Braid of Fire (CSP) 78
+1 Chaos Warp (EOC) 49
 1 Clive, Ifrit's Dominant / Ifrit, Warden of Inferno (FIN) 458
+1 Comet Storm (CMR) 411
+1 Command Beacon (TDC) 352
+1 Command Tower (EOC) 59
+1 Crackle with Power (PRM) 90126
+1 Damnation (SLD) 121
+1 Dark Ritual (3ED) 99
+1 Deadly Rollick (CMM) 147
+1 Deflecting Swat (CMM) 214
+1 Dolmen Gate (LRW) 256
+1 Doubling Cube (5DN) 116
+1 Electro, Assaulting Battery (SPM) 260
+1 Electrodominance (TDC) 212
+1 Emergence Zone (WAR) 245
+1 Exsanguinate (FIC) 276
+1 Fated Firepower (TLA) 132
+1 Feed the Swarm (TLE) 257
+1 Fire Nation Attacks (TLA) 133
+1 Fire Nation Palace (TLA) 268
+1 Fire Nation Turret (TLE) 64
+1 Firebender Ascension (TLA) 137
+1 Firebending Student (TLA) 393
+1 Gogo, Mysterious Mime (FIC) 153
+1 Graven Cairns (FIC) 401
+1 Great Train Heist (OTJ) 331
+1 Inferno of the Star Mounts (PAFR) 151p
+1 Jaya's Immolating Inferno (DOM) 133
+1 Karlach, Fury of Avernus (CLB) 186
+1 Kediss, Emberclaw Familiar (CMR) 188
+1 Knollspine Dragon (LTC) 224
+1 Leyline Tyrant (ZNR) 348
+1 Lightning Greaves (FIC) 349
+1 Luxury Suite (CLB) 355
+1 Magus of the Wheel (CMM) 241
+1 Mana Geyser (TDC) 223
+11 Mountain (TLA) 290
+1 Neheb, the Eternal (MKC) 158
+1 Night's Whisper (DSC) 79
+1 Professional Face-Breaker (FIC) 296
+1 Rakdos Signet (DSC) 250
+1 Raucous Theater (PMKM) 266p
+1 Redirect Lightning (TLA) 151
+1 Return the Favor (OTJ) 142
+1 Rogue's Passage (FIC) 415
+1 Savage Beating (CMM) 252
+1 Seething Song (C21) 179
+1 Shinka, the Bloodsoaked Keep (CHK) 282
+1 Shizo, Death's Storehouse (PLST) CHK-283 *F*
+1 Sol Ring (3ED) 274
+1 Sozin's Comet (TLA) 154
+1 Sulfurous Springs (FIC) 427
+6 Swamp (TLA) 289
+1 Swiftfoot Boots (PIP) 242
+1 Talisman of Indulgence (FIC) 366
+1 The Black Gate (LTC) 80
+1 The Last Agni Kai (TLA) 144
 1 The Legend of Roku / Avatar Roku (TLA) 357
-1 The Legend of Yangchen / Avatar Yangchen (TLA) 354
+1 The Reaver Cleaver (M3C) 217
 1 The Rise of Sozin / Fire Lord Sozin (TLA) 356
+1 The Soul Stone (SPM) 66
+1 Torment of Hailfire (PLST) HOU-77
+1 Unexpected Windfall (PIP) 193
+1 Untimely Malfunction (DSK) 161
+1 Urborg, Tomb of Yawgmoth (PLST) UMA-254
+1 Vandalblast (FIC) 298
+1 Vedalken Orrery (5DN) 163
+1 Wheel of Fortune (3ED) 185
+1 Withering Torment (DSK) 124
+1 Zuko, Exiled Prince (TLA) 163
+1 Dragon (TTLA) 9
+1 Soldier (TTLA) 11
+1 Treasure (TFIN) 23

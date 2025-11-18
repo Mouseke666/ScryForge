@@ -1,5 +1,5 @@
 
-namespace MTGArtDownloader.Services
+namespace ScryForge.Services
 {
     public class UpscalerService
     {

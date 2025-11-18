@@ -1,11 +1,7 @@
-using System;
 using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 using System.ComponentModel;
 
-namespace MTGArtDownloader.Services
+namespace ScryForge.Services
 {
     public class DownloaderService
     {

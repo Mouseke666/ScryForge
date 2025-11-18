@@ -1,9 +1,6 @@
-using MTGArtDownloader.Models;
-using System;
-using System.Collections.Generic;
-using System.IO;
+using ScryForge.Models;
 
-namespace MTGArtDownloader.Services
+namespace ScryForge.Services
 {
     public class CopyService
     {
