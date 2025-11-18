@@ -8,6 +8,7 @@ internal class Program
     private static async Task Main(string[] args)
     {
         var builder = Host.CreateApplicationBuilder(args);
+
         builder.Services.AddSingleton<CleanupService>();
         builder.Services.AddSingleton<OpenFolderService>();
         builder.Services.AddSingleton<CardParserService>();
@@ -18,7 +19,9 @@ internal class Program
         builder.Services.AddSingleton<PDFService>();
         builder.Services.AddSingleton<PDFOpenService>();
         builder.Services.AddHostedService<PipelineService>();
+
         builder.Logging.ClearProviders();
+
         builder.Logging.AddSimpleConsole(options =>
         {
             options.IncludeScopes = false;
@@ -27,7 +30,17 @@ internal class Program
             options.UseUtcTimestamp = false;
         });
 
-        builder.Logging.AddFilter("Microsoft.Hosting.Lifetime", LogLevel.None);
+        // ✨ dit onderdrukt category+level in output
+        builder.Logging.AddFilter((category, level) =>
+        {
+            if (category.StartsWith("Microsoft.Hosting.Lifetime"))
+                return false;
+
+            if (category.StartsWith("ScryForge.Services"))
+                return true; // laat de logger werken, maar formatter toont geen categorie/level
+
+            return true;
+        });
 
         await builder.Build().RunAsync();
     }

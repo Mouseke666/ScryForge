@@ -43,9 +43,15 @@ namespace ScryForge.Services
             }
             catch (Win32Exception ex) when (ex.NativeErrorCode == 1223)
             {
-                // User cancelled UAC / SmartScreen
                 Console.WriteLine("Download cancelled by user (UAC/SmartScreen).");
                 Console.WriteLine("To fix: Right-click MTG Art Downloader.exe → Properties → Unblock");
+
+                if (Console.IsInputRedirected == false) // betekent: er is een echte console beschikbaar
+                {
+                    Console.WriteLine("Press any key to continue...");
+                    Console.ReadKey(true);
+                }
+
                 return false;
             }
             catch (Exception ex)
