@@ -24,8 +24,6 @@ internal class Program
                     \/     \/       \/          \/             /_____/      \/ 
                     ");
 
-        Thread.Sleep(2000); // 2000 milliseconden = 2 seconden
-
         Console.WriteLine("Cleaning...");
         cleanup.CleanDirectory(AppConfig.DownloadedFolder);
         cleanup.CleanDirectory(AppConfig.UpscaledFolder);
@@ -43,6 +41,8 @@ internal class Program
             Console.ReadLine();
             return;
         }
+
+        copy.CopyFilesToRoot(AppConfig.ScryfallSource);
 
         Console.WriteLine("Upscaling...");
         await upscaler.RunUpscalerAsync();

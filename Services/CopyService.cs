@@ -7,6 +7,46 @@ namespace MTGArtDownloader.Services
 {
     public class CopyService
     {
+        public void CopyFilesToRoot(string path)
+        {
+            if (!Directory.Exists(path))
+            {
+                Console.WriteLine("De opgegeven map bestaat niet.");
+                return;
+            }
+
+            // Haal alle subfolders op
+            string[] subDirs = Directory.GetDirectories(path);
+
+            foreach (string subDir in subDirs)
+            {
+                // Haal alle bestanden in deze subfolder (en sub-subfolders)
+                string[] files = Directory.GetFiles(subDir, "*.*", SearchOption.AllDirectories);
+
+                foreach (string file in files)
+                {
+                    string fileName = Path.GetFileName(file);
+                    string destinationPath = Path.Combine(path, fileName);
+
+                    // Controleer op naamconflicten en voeg een nummer toe indien nodig
+                    int counter = 1;
+                    while (File.Exists(destinationPath))
+                    {
+                        string fileNameWithoutExt = Path.GetFileNameWithoutExtension(file);
+                        string extension = Path.GetExtension(file);
+                        destinationPath = Path.Combine(path, $"{fileNameWithoutExt}_{counter}{extension}");
+                        counter++;
+                    }
+
+                    File.Copy(file, destinationPath);
+                    Console.WriteLine($"Gekopieerd: {file} -> {destinationPath}");
+                }
+            }
+
+            Console.WriteLine("Alle bestanden uit subfolders zijn gekopieerd naar de rootfolder.");
+        }
+
+
         /// <summary>
         /// Dupliceert individuele kaarten op basis van hun quantity.
         /// </summary>
@@ -121,7 +161,7 @@ namespace MTGArtDownloader.Services
             }
             var path1 = Path.GetDirectoryName(destinationFolder);
             var path2 = Path.GetFileName(sourceFile);
-            if (!string.IsNullOrEmpty(path1) && string.IsNullOrEmpty(path2))
+            if (!string.IsNullOrEmpty(path1) && !string.IsNullOrEmpty(path2))
             {
                 var destPath = Path.Combine(path1, path2);
                 try
