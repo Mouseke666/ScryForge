@@ -13,6 +13,10 @@ ScryForge is an automated pipeline for downloading, upscaling, and processing Ma
 - Easily opens the output folder after processing.
 - Console logging with timestamps and clear status updates.
 
+### Preparing `cards.txt`
+
+To use ScryForge, open your deck in Moxfield and export it as a text file. Copy the exported list into `cards.txt` in the folder specified by `AppConfig.BasePath`. The pipeline will read this file to download and process your cards.
+
 ## Project Structure
 
 - **Services**
