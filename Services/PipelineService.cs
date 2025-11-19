@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using ScryForge.Models;
 
 namespace ScryForge.Services
 {
@@ -102,7 +103,7 @@ namespace ScryForge.Services
             await _upscaler.RunUpscalerAsync();
 
             _logger.LogInformation("Step 4/10 – Parsing cards.txt...");
-            var cards = _parser.ParseCards(AppConfig.CardsFile);
+            List<CardInfo> cards = _parser.ParseCards(AppConfig.CardsFile);
 
             _logger.LogInformation("Step 5/10 – Duplicating double-faced cards...");
             _copy.DuplicateCards(cards);
@@ -111,7 +112,11 @@ namespace ScryForge.Services
             _flips.ProcessFlipCards(cards);
 
             _logger.LogInformation("Step 7/10 – Generating default.pdf...");
-            await _pdf.RunAsync("default");
+
+            if (cards.Any(c => !c.IsFlip))
+            {
+                await _pdf.RunAsync("default");
+            }
 
             _logger.LogInformation("Step 8/10 – Cleaning upscaled folder (excluding flip cards)...");
             _cleanup.CleanDirectory(AppConfig.UpscaledFolder, "flips");
