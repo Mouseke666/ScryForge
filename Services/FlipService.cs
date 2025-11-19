@@ -49,7 +49,6 @@ namespace ScryForge.Services
                 {
                     for (int i = 0; i < flipCard.Quantity; i++)
                     {
-                        // Nieuwe bestandsnamen
                         string frontCopyName = $"{flipCard.FrontName}{frontFile.Extension}";
                         string backCopyName = $"__back_{flipCard.FrontName}{backFile.Extension}";
 
@@ -78,7 +77,6 @@ namespace ScryForge.Services
                         }
                     }
 
-                    // Vernieuw de lijst na verwijdering
                     upscaledFiles = Directory.GetFiles(AppConfig.UpscaledFolder)
                                              .Select(f => new FileInfo(f))
                                              .ToList();

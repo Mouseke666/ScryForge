@@ -1,6 +1,5 @@
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using ScryForge.Services;
+using Microsoft.Extensions.DependencyInjection;
 
 public static class ServiceCollectionExtensions
 {
@@ -14,9 +13,8 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<CopyService>();
         services.AddSingleton<FlipService>();
         services.AddSingleton<PDFService>();
-        services.AddSingleton<PDFOpenService>();     // of liever PdfOpener als je wilt hernoemen
+        services.AddSingleton<PDFOpenService>();
 
-        // PipelineService wordt een hosted service zodat je host.RunAsync() kunt gebruiken
         services.AddHostedService<PipelineService>();
 
         return services;

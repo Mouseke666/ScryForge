@@ -5,10 +5,6 @@ namespace ScryForge.Services
 {
     public class CardParserService
     {
-        // private static readonly Regex CardLineRegex = new(
-        //     @"^\s*(\d+)\s+(.+?)\s+\(([A-Z0-9]+)\)\s+(\d+)\s*$",
-        //     RegexOptions.Compiled | RegexOptions.IgnoreCase);
-
         private static readonly Regex CardLineRegex = new(
             @"^\s*(\d+)\s+(.+?)\s+\(([A-Z0-9]+)\)\s+([^\s()]+)\s*$",
             RegexOptions.Compiled | RegexOptions.IgnoreCase);

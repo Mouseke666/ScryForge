@@ -13,11 +13,10 @@ namespace ScryForge.Services
                 return;
             }
 
-            // Het pad waar de JSON en exe staan
             var workingDir = Path.GetDirectoryName(exe);
             string projectFile = $"{project}.json";
             string arguments = $"/c \"{exe} --render --project {projectFile}\"";
-            // Start het proces via cmd /c zodat het exact CMD-gedrag volgt
+
             var psi = new ProcessStartInfo
             {
                 FileName = exe,
@@ -31,7 +30,6 @@ namespace ScryForge.Services
 
             using var process = new Process { StartInfo = psi };
 
-            // Async output en error lezen
             process.OutputDataReceived += (sender, e) =>
             {
                 if (!string.IsNullOrEmpty(e.Data))
@@ -48,7 +46,6 @@ namespace ScryForge.Services
             process.BeginOutputReadLine();
             process.BeginErrorReadLine();
 
-            // Wacht tot het proces klaar is
             await process.WaitForExitAsync();
 
             if (workingDir == null)
@@ -63,8 +60,9 @@ namespace ScryForge.Services
             if (File.Exists(printMeFile))
             {
                 if (File.Exists(projectPdf))
+                {
                     File.Delete(projectPdf);
-
+                }
                 File.Move(printMeFile, projectPdf);
                 Console.WriteLine($"PDF renamed to: {projectPdf}");
             }

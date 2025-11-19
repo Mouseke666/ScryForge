@@ -61,7 +61,6 @@ namespace ScryForge.Services
 
         private async Task RunPipelineAsync(CancellationToken ct)
         {
-            // Epic banner – nu ook via logger (blijft zichtbaar in console!)
             var banner = @"
             _________                    ___________                         
             /   _____/ ___________ ___.__.\_   _____/__________  ____   ____  
@@ -71,9 +70,10 @@ namespace ScryForge.Services
                     \/     \/       \/          \/             /_____/      \/ 
             ".Trim();
 
-            // Log elke regel apart zodat het netjes op meerdere regels komt
             foreach (var line in banner.Split('\n', StringSplitOptions.TrimEntries))
+            {
                 _logger.LogInformation(line);
+            }
 
             _logger.LogInformation("Pipeline started");
 
@@ -139,7 +139,6 @@ namespace ScryForge.Services
 
             _logger.LogInformation("Mission was a great success!");
 
-            // Map openen zonder console output
             _openfolder.OpenFolder(AppConfig.BasePath);
         }
 

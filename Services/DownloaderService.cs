@@ -18,12 +18,9 @@ namespace ScryForge.Services
             {
                 FileName = exe,
                 WorkingDirectory = AppConfig.ArtDownloaderPath,
-                UseShellExecute = false,                    // nodig voor CreateNoWindow
-                CreateNoWindow = true,                       // cruciaal: geen console venster
-                WindowStyle = ProcessWindowStyle.Hidden,     // extra laag veiligheid
-                                                             // Als je ooit logs wilt zien (handig bij debuggen):
-                                                             // RedirectStandardOutput = true,
-                                                             // RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                WindowStyle = ProcessWindowStyle.Hidden,
             };
 
             try
@@ -35,10 +32,8 @@ namespace ScryForge.Services
                     return false;
                 }
 
-                // Wacht netjes tot hij klaar is (zonder blocking thread)
                 await process.WaitForExitAsync();
 
-                // Optioneel: check exit code als de downloader die netjes zet
                 return process.ExitCode == 0;
             }
             catch (Win32Exception ex) when (ex.NativeErrorCode == 1223)
@@ -46,7 +41,7 @@ namespace ScryForge.Services
                 Console.WriteLine("Download cancelled by user (UAC/SmartScreen).");
                 Console.WriteLine("To fix: Right-click MTG Art Downloader.exe → Properties → Unblock");
 
-                if (Console.IsInputRedirected == false) // betekent: er is een echte console beschikbaar
+                if (Console.IsInputRedirected == false)
                 {
                     Console.WriteLine("Press any key to continue...");
                     Console.ReadKey(true);

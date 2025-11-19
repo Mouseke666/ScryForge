@@ -2,11 +2,6 @@ namespace ScryForge.Services
 {
     public class CleanupService
     {
-        /// <summary>
-        /// Verwijdert alle bestanden en subfolders in de opgegeven map, behalve de opgegeven subfolder en de bestanden daarin.
-        /// </summary>
-        /// <param name="path">Root folder om op te ruimen</param>
-        /// <param name="excludeSubfolder">Naam van subfolder die niet verwijderd mag worden (optioneel)</param>
         public void CleanDirectory(string path, string? excludeSubfolder = null)
         {
             if (!Directory.Exists(path))
@@ -15,7 +10,6 @@ namespace ScryForge.Services
                 return;
             }
 
-            // --- Verwijder bestanden in root folder ---
             foreach (var file in Directory.GetFiles(path))
             {
                 try
@@ -28,7 +22,6 @@ namespace ScryForge.Services
                 }
             }
 
-            // --- Verwijder subfolders behalve excludeSubfolder ---
             foreach (var dir in Directory.GetDirectories(path))
             {
                 var dirName = new DirectoryInfo(dir).Name;
@@ -36,7 +29,7 @@ namespace ScryForge.Services
                 {
                     try
                     {
-                        Directory.Delete(dir, true); // verwijder alles in de folder
+                        Directory.Delete(dir, true);
                         Console.WriteLine($"Subfolder deleted: {dir}");
                     }
                     catch (Exception ex)
@@ -47,10 +40,6 @@ namespace ScryForge.Services
             }
         }
 
-        /// <summary>
-        /// Verwijdert een specifiek bestand als het bestaat.
-        /// </summary>
-        /// <param name="filePath">Volledig pad van het bestand dat verwijderd moet worden</param>
         public void DeleteFile(string filePath)
         {
             if (!File.Exists(filePath))

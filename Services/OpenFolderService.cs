@@ -20,7 +20,7 @@ namespace ScryForge.Services
             }
             else
             {
-                Console.WriteLine($"Map bestaat niet: {folder}");
+                Console.WriteLine($"Folder does not exist: {folder}");
             }
         }
     }

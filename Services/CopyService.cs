@@ -12,12 +12,10 @@ namespace ScryForge.Services
                 return;
             }
 
-            // Haal alle subfolders op
             string[] subDirs = Directory.GetDirectories(path);
 
             foreach (string subDir in subDirs)
             {
-                // Haal alle bestanden in deze subfolder (en sub-subfolders)
                 string[] files = Directory.GetFiles(subDir, "*.*", SearchOption.AllDirectories);
 
                 foreach (string file in files)
@@ -25,7 +23,6 @@ namespace ScryForge.Services
                     string fileName = Path.GetFileName(file);
                     string destinationPath = Path.Combine(path, fileName);
 
-                    // Controleer op naamconflicten en voeg een nummer toe indien nodig
                     int counter = 1;
                     while (File.Exists(destinationPath))
                     {
@@ -43,21 +40,12 @@ namespace ScryForge.Services
             Console.WriteLine("Alle bestanden uit subfolders zijn gekopieerd naar de rootfolder.");
         }
 
-
-        /// <summary>
-        /// Dupliceert individuele kaarten op basis van hun quantity.
-        /// </summary>
         public void DuplicateCards(List<CardInfo> cards)
         {
             string folder = AppConfig.UpscaledFolder;
 
             foreach (var card in cards)
             {
-                if (card.Name == "Arcane Signet")
-                {
-
-                }
-                // Zoek het bronbestand dat begint met de kaartnaam
                 var files = Directory.GetFiles(folder, $"{card.FrontFileName}");
 
                 if (files.Length == 0)
@@ -66,26 +54,16 @@ namespace ScryForge.Services
                     continue;
                 }
 
-                // Gebruik het eerste gevonden bestand als bron
                 var src = files[0];
 
-                // Maak duplicaten vanaf _2 tot Quantity
                 for (int i = 2; i <= card.Quantity; i++)
                 {
                     var dest = Path.Combine(folder, $"{Path.GetFileNameWithoutExtension(src)}_{i}.png");
-
-                    // Altijd overschrijven zodat er geen bestanden worden overgeslagen
                     File.Copy(src, dest, true);
                 }
             }
         }
 
-        /// <summary>
-        /// Kopieert alle bestanden van een bronfolder naar een doelfolder.
-        /// </summary>
-        /// <param name="sourceFolder">Folder waarvan de bestanden gekopieerd moeten worden</param>
-        /// <param name="destinationFolder">Folder waar de bestanden naartoe gekopieerd worden</param>
-        /// <param name="overwrite">True = overschrijf bestaande bestanden, False = sla over</param>
         public void CopyFolderFiles(string sourceFolder, string destinationFolder, bool overwrite = true)
         {
             if (!Directory.Exists(sourceFolder))
@@ -113,12 +91,6 @@ namespace ScryForge.Services
             }
         }
 
-        /// <summary>
-        /// Verplaatst een enkel bestand van source naar destination.
-        /// </summary>
-        /// <param name="sourceFile">Volledige pad van het bronbestand</param>
-        /// <param name="destinationFolder">Folder waar het bestand naartoe moet</param>
-        /// <param name="overwrite">True = overschrijf bestaande bestanden</param>
         public void MoveFile(string sourceFile, string destinationFolder, bool overwrite = true)
         {
             if (!File.Exists(sourceFile))
@@ -129,12 +101,12 @@ namespace ScryForge.Services
 
             try
             {
-                // Als overwrite = true, verwijder het doelbestand eerst
                 if (overwrite && File.Exists(destinationFolder))
+                {
                     File.Delete(destinationFolder);
-
+                }
                 File.Copy(sourceFile, destinationFolder, overwrite);
-                File.Delete(sourceFile); // verwijder origineel
+                File.Delete(sourceFile);
                 Console.WriteLine($"File moved: {sourceFile} -> {destinationFolder}");
             }
             catch (Exception ex)
@@ -143,12 +115,6 @@ namespace ScryForge.Services
             }
         }
 
-        /// <summary>
-        /// Kopieert een enkel bestand van source naar destination zonder het origineel te verwijderen.
-        /// </summary>
-        /// <param name="sourceFile">Volledig pad van het bronbestand</param>
-        /// <param name="destinationFolder">Folder waar het bestand naartoe moet</param>
-        /// <param name="overwrite">True = overschrijf bestaande bestanden</param>
         public void CopyFile(string sourceFile, string destinationFolder, bool overwrite = true)
         {
             if (!File.Exists(sourceFile))
