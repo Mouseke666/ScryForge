@@ -103,7 +103,7 @@ namespace ScryForge.Services
             _copy.CopyFilesToRoot(AppConfig.ScryfallSource);
 
             _logger.LogInformation("Step {Step}/{TotalSteps} – Upscaling images... (this could take a while)", step++, totalSteps);
-            await _upscaler.RunUpscalerAsync(false);
+            await _upscaler.RunUpscalerAsync(true);
 
             _logger.LogInformation("Step {Step}/{TotalSteps} – Parsing cards.txt...", step++, totalSteps);
             List<CardInfo> cards = await _parser.ParseCardsAsync(AppConfig.CardsFile);
