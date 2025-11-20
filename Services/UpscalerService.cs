@@ -12,7 +12,7 @@ namespace ScryForge.Services
             _logger = logger;
         }
 
-        public async Task RunUpscalerAsync()
+        public async Task RunUpscalerAsync(bool logOutput)
         {
             var exe = AppConfig.UpscalerExe;
             if (string.IsNullOrWhiteSpace(exe) || !File.Exists(exe))
@@ -37,22 +37,38 @@ namespace ScryForge.Services
 
             try
             {
-                using var process = Process.Start(psi);
-                if (process == null)
+                using var process = new Process { StartInfo = psi, EnableRaisingEvents = true };
+
+                if (logOutput)
                 {
-                    _logger.LogError("Failed to start upscaler process.");
-                    return;
+                    process.OutputDataReceived += (sender, e) =>
+                    {
+                        if (!string.IsNullOrEmpty(e.Data))
+                            _logger.LogInformation(e.Data);
+                    };
+
+                    process.ErrorDataReceived += (sender, e) =>
+                    {
+                        if (string.IsNullOrEmpty(e.Data)) return;
+
+                        if (e.Data.Contains("%"))
+                            _logger.LogInformation(e.Data);
+                        else
+                            _logger.LogError(e.Data);
+                    };
                 }
 
-                _logger.LogInformation("Upscaling images with {Model} (scale {Scale}x)...", AppConfig.UpscaleModel, AppConfig.UpscaleScale);
+                process.Start();
+
+                if (logOutput)
+                {
+                    process.BeginOutputReadLine();
+                    process.BeginErrorReadLine();
+                }
 
                 await process.WaitForExitAsync();
 
-                if (process.ExitCode == 0)
-                {
-                    _logger.LogInformation("Upscaling completed successfully.");
-                }
-                else
+                if (process.ExitCode != 0)
                 {
                     _logger.LogError("Upscaler exited with error code {ExitCode}", process.ExitCode);
                 }

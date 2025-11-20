@@ -1,16 +1,24 @@
 using System.Diagnostics;
 using System.ComponentModel;
+using Microsoft.Extensions.Logging;
 
 namespace ScryForge.Services
 {
     public class DownloaderService
     {
+        private readonly ILogger<DownloaderService> _logger;
+
+        public DownloaderService(ILogger<DownloaderService> logger)
+        {
+            _logger = logger;
+        }
+
         public async Task<bool> DownloadArtAsync()
         {
             var exe = AppConfig.ArtDownloaderExe;
             if (!File.Exists(exe))
             {
-                Console.WriteLine("Downloader exe missing: " + exe);
+                _logger.LogError("Downloader exe missing: {ExePath}", exe);
                 return false;
             }
 
@@ -28,30 +36,31 @@ namespace ScryForge.Services
                 using var process = Process.Start(psi);
                 if (process == null)
                 {
-                    Console.WriteLine("Could not start the downloader process.");
+                    _logger.LogError("Could not start the downloader process.");
                     return false;
                 }
 
                 await process.WaitForExitAsync();
 
-                return process.ExitCode == 0;
+                if (process.ExitCode == 0)
+                {
+                    return true;
+                }
+                else
+                {
+                    _logger.LogWarning("Downloader exited with code {ExitCode}", process.ExitCode);
+                    return false;
+                }
             }
             catch (Win32Exception ex) when (ex.NativeErrorCode == 1223)
             {
-                Console.WriteLine("Download cancelled by user (UAC/SmartScreen).");
-                Console.WriteLine("To fix: Right-click MTG Art Downloader.exe → Properties → Unblock");
-
-                if (Console.IsInputRedirected == false)
-                {
-                    Console.WriteLine("Press any key to continue...");
-                    Console.ReadKey(true);
-                }
+                _logger.LogWarning("Download cancelled by user (UAC/SmartScreen). To fix: Right-click MTG Art Downloader.exe → Properties → Unblock");
 
                 return false;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error starting downloader: {ex.Message}");
+                _logger.LogError(ex, "Error starting downloader process.");
                 return false;
             }
         }

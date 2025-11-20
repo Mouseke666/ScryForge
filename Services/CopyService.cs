@@ -1,14 +1,22 @@
+using Microsoft.Extensions.Logging;
 using ScryForge.Models;
 
 namespace ScryForge.Services
 {
     public class CopyService
     {
+        private readonly ILogger<CopyService> _logger;
+
+        public CopyService(ILogger<CopyService> logger)
+        {
+            _logger = logger;
+        }
+
         public void CopyFilesToRoot(string path)
         {
             if (!Directory.Exists(path))
             {
-                Console.WriteLine("De opgegeven map bestaat niet.");
+                _logger.LogWarning("De opgegeven map bestaat niet: {Path}", path);
                 return;
             }
 
@@ -32,12 +40,16 @@ namespace ScryForge.Services
                         counter++;
                     }
 
-                    File.Copy(file, destinationPath);
-                    Console.WriteLine($"Gekopieerd: {file} -> {destinationPath}");
+                    try
+                    {
+                        File.Copy(file, destinationPath);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Fout bij kopiëren van {Source} naar {Destination}", file, destinationPath);
+                    }
                 }
             }
-
-            Console.WriteLine("Alle bestanden uit subfolders zijn gekopieerd naar de rootfolder.");
         }
 
         public void DuplicateCards(List<CardInfo> cards)
@@ -50,7 +62,7 @@ namespace ScryForge.Services
 
                 if (files.Length == 0)
                 {
-                    Console.WriteLine($"Geen bronbestand gevonden voor kaart: {card.FrontFileName}");
+                    _logger.LogWarning("Geen bronbestand gevonden voor kaart: {Card}", card.FrontFileName);
                     continue;
                 }
 
@@ -59,7 +71,14 @@ namespace ScryForge.Services
                 for (int i = 2; i <= card.Quantity; i++)
                 {
                     var dest = Path.Combine(folder, $"{Path.GetFileNameWithoutExtension(src)}_{i}.png");
-                    File.Copy(src, dest, true);
+                    try
+                    {
+                        File.Copy(src, dest, true);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Fout bij dupliceren van {Source} naar {Destination}", src, dest);
+                    }
                 }
             }
         }
@@ -68,7 +87,7 @@ namespace ScryForge.Services
         {
             if (!Directory.Exists(sourceFolder))
             {
-                Console.WriteLine($"Source folder already exists: {sourceFolder}");
+                _logger.LogWarning("Source folder does not exist: {Folder}", sourceFolder);
                 return;
             }
 
@@ -82,11 +101,10 @@ namespace ScryForge.Services
                 try
                 {
                     File.Copy(file, destPath, overwrite);
-                    Console.WriteLine($"File copied: {fileName}");
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Error while copying {fileName}: {ex.Message}");
+                    _logger.LogError(ex, "Error while copying {Source} to {Destination}", file, destPath);
                 }
             }
         }
@@ -95,7 +113,7 @@ namespace ScryForge.Services
         {
             if (!File.Exists(sourceFile))
             {
-                Console.WriteLine($"Sourcefile does not exist: {sourceFile}");
+                _logger.LogWarning("Source file does not exist: {File}", sourceFile);
                 return;
             }
 
@@ -105,13 +123,13 @@ namespace ScryForge.Services
                 {
                     File.Delete(destinationFolder);
                 }
+
                 File.Copy(sourceFile, destinationFolder, overwrite);
                 File.Delete(sourceFile);
-                Console.WriteLine($"File moved: {sourceFile} -> {destinationFolder}");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error while moving from {sourceFile} to {destinationFolder}: {ex.Message}");
+                _logger.LogError(ex, "Error while moving from {Source} to {Destination}", sourceFile, destinationFolder);
             }
         }
 
@@ -119,22 +137,23 @@ namespace ScryForge.Services
         {
             if (!File.Exists(sourceFile))
             {
-                Console.WriteLine($"Source file does not exist: {sourceFile}");
+                _logger.LogWarning("Source file does not exist: {File}", sourceFile);
                 return;
             }
+
             var path1 = Path.GetDirectoryName(destinationFolder);
             var path2 = Path.GetFileName(sourceFile);
+
             if (!string.IsNullOrEmpty(path1) && !string.IsNullOrEmpty(path2))
             {
                 var destPath = Path.Combine(path1, path2);
                 try
                 {
                     File.Copy(sourceFile, destPath, overwrite);
-                    Console.WriteLine($"File copied: {sourceFile} -> {destPath}");
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Error copying {sourceFile} to {destPath}: {ex.Message}");
+                    _logger.LogError(ex, "Error copying {Source} to {Destination}", sourceFile, destPath);
                 }
             }
         }

@@ -1,7 +1,16 @@
+using Microsoft.Extensions.Logging;
+
 namespace ScryForge.Services
 {
     public class CleanupService
     {
+        private readonly ILogger<CleanupService> _logger;
+
+        public CleanupService(ILogger<CleanupService> logger)
+        {
+            _logger = logger;
+        }
+
         public void CleanDirectory(string path, string? excludeSubfolder = null)
         {
             if (!Directory.Exists(path))
@@ -18,7 +27,7 @@ namespace ScryForge.Services
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Error deleting file {file}: {ex.Message}");
+                    _logger.LogError(ex, "Error deleting file {File}", file);
                 }
             }
 
@@ -30,11 +39,10 @@ namespace ScryForge.Services
                     try
                     {
                         Directory.Delete(dir, true);
-                        Console.WriteLine($"Subfolder deleted: {dir}");
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"Error deleting subfolder {dir}: {ex.Message}");
+                        _logger.LogError(ex, "Error deleting subfolder {Dir}", dir);
                     }
                 }
             }
@@ -44,20 +52,17 @@ namespace ScryForge.Services
         {
             if (!File.Exists(filePath))
             {
-                Console.WriteLine($"File does not exist: {filePath}");
                 return;
             }
 
             try
             {
                 File.Delete(filePath);
-                Console.WriteLine($"File deleted: {filePath}");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error deleting {filePath}: {ex.Message}");
+                _logger.LogError(ex, "Error deleting {File}", filePath);
             }
         }
-
     }
 }

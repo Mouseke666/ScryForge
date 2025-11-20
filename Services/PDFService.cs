@@ -1,26 +1,43 @@
 using System.Diagnostics;
+using Microsoft.Extensions.Logging;
 
 namespace ScryForge.Services
 {
     public class PDFService
     {
-        public async Task RunAsync(string project)
+        private readonly ILogger<PDFService> _logger;
+
+        public PDFService(ILogger<PDFService> logger)
+        {
+            _logger = logger;
+        }
+
+        public async Task RunAsync(string project, bool showOutput = true)
         {
             var exe = AppConfig.PDFExe;
             if (!File.Exists(exe))
             {
-                Console.WriteLine($"PDF Service executable missing at: {exe}");
+                if (showOutput)
+                    _logger.LogError("PDF Service executable missing at: {Exe}", exe);
+
                 return;
             }
 
             var workingDir = Path.GetDirectoryName(exe);
+            if (workingDir == null)
+            {
+                if (showOutput)
+                    _logger.LogError("Working directory could not be determined for PDF service.");
+
+                throw new InvalidOperationException("workingDir cannot be null.");
+            }
+
             string projectFile = $"{project}.json";
-            string arguments = $"/c \"{exe} --render --project {projectFile}\"";
 
             var psi = new ProcessStartInfo
             {
                 FileName = exe,
-                Arguments = $"--render --project \"{project}.json\"",
+                Arguments = $"--render --project \"{projectFile}\"",
                 WorkingDirectory = workingDir,
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
@@ -28,50 +45,52 @@ namespace ScryForge.Services
                 CreateNoWindow = true
             };
 
-            using var process = new Process { StartInfo = psi };
+            using var process = new Process { StartInfo = psi, EnableRaisingEvents = true };
 
             process.OutputDataReceived += (sender, e) =>
             {
-                if (!string.IsNullOrEmpty(e.Data))
-                    Console.WriteLine(e.Data);
+                if (showOutput && !string.IsNullOrEmpty(e.Data))
+                    _logger.LogInformation("[PDFService] {Message}", e.Data);
             };
 
             process.ErrorDataReceived += (sender, e) =>
             {
-                if (!string.IsNullOrEmpty(e.Data))
-                    Console.Error.WriteLine(e.Data);
+                if (showOutput && !string.IsNullOrEmpty(e.Data))
+                    _logger.LogError("[PDFService] {Message}", e.Data);
             };
 
-            process.Start();
-            process.BeginOutputReadLine();
-            process.BeginErrorReadLine();
-
-            await process.WaitForExitAsync();
-
-            if (workingDir == null)
+            try
             {
-                throw new InvalidOperationException("workingDir cannot be null.");
-            }
+                process.Start();
+                process.BeginOutputReadLine();
+                process.BeginErrorReadLine();
 
-            var printMeFile = Path.Combine(workingDir, "_printme.pdf");
+                await process.WaitForExitAsync();
 
-            var projectPdf = Path.Combine(workingDir, $"{project}.pdf");
+                var printMeFile = Path.Combine(workingDir, "_printme.pdf");
+                var projectPdf = Path.Combine(workingDir, $"{project}.pdf");
 
-            if (File.Exists(printMeFile))
-            {
-                if (File.Exists(projectPdf))
+                if (File.Exists(printMeFile))
                 {
-                    File.Delete(projectPdf);
-                }
-                File.Move(printMeFile, projectPdf);
-                Console.WriteLine($"PDF renamed to: {projectPdf}");
-            }
-            else
-            {
-                Console.WriteLine("Cannot find _printme.pdf to rename.");
-            }
+                    if (File.Exists(projectPdf))
+                        File.Delete(projectPdf);
 
-            Console.WriteLine($"PDF Service finished with exit code {process.ExitCode}");
+                    File.Move(printMeFile, projectPdf);
+
+                    if (showOutput)
+                        _logger.LogInformation("PDF saved as: {Pdf}", projectPdf);
+                }
+                else
+                {
+                    if (showOutput)
+                        _logger.LogWarning("Cannot find _printme.pdf to rename.");
+                }
+            }
+            catch (Exception ex)
+            {
+                if (showOutput)
+                    _logger.LogError(ex, "PDF Service failed for project {Project}", project);
+            }
         }
     }
 }

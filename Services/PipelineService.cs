@@ -1,6 +1,6 @@
+using ScryForge.Models;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using ScryForge.Models;
 
 namespace ScryForge.Services
 {
@@ -63,13 +63,13 @@ namespace ScryForge.Services
         private async Task RunPipelineAsync(CancellationToken ct)
         {
             var banner = @"
-            _________                    ___________                         
-            /   _____/ ___________ ___.__.\_   _____/__________  ____   ____  
-            \_____  \_/ ___\_  __ <   |  | |    __)/  _ \_  __ \/ ___\_/ __ \ 
-            /        \  \___|  | \/\___  | |     \(  <_> )  | \/ /_/  >  ___/ 
-            /_______  /\___  >__|   / ____| \___  / \____/|__|  \___  / \___  >
-                    \/     \/       \/          \/             /_____/      \/ 
-            ".Trim();
+                _________                    ___________                         
+                /   _____/ ___________ ___.__.\_   _____/__________  ____   ____  
+                \_____  \_/ ___\_  __ <   |  | |    __)/  _ \_  __ \/ ___\_/ __ \ 
+                /        \  \___|  | \/\___  | |     \(  <_> )  | \/ /_/  >  ___/ 
+                /_______  /\___  >__|   / ____| \___  / \____/|__|  \___  / \___  >
+                        \/     \/       \/          \/             /_____/      \/ 
+                ".Trim();
 
             foreach (var line in banner.Split('\n', StringSplitOptions.TrimEntries))
             {
@@ -78,7 +78,10 @@ namespace ScryForge.Services
 
             _logger.LogInformation("Pipeline started");
 
-            _logger.LogInformation("Step 1/10 – Cleaning up directories...");
+            int step = 1;
+            int totalSteps = 9;
+
+            _logger.LogInformation("Step {Step}/{TotalSteps} – Cleaning up directories...", step++, totalSteps);
             _cleanup.CleanDirectory(AppConfig.DownloadedFolder);
             _cleanup.CleanDirectory(AppConfig.UpscaledFolder);
             _cleanup.DeleteFile(Path.Combine(AppConfig.BasePath, "default.pdf"));
@@ -88,7 +91,7 @@ namespace ScryForge.Services
                 Path.Combine(AppConfig.BasePath, "cards.txt"),
                 Path.Combine(AppConfig.ArtDownloaderPath, "cards.txt"));
 
-            _logger.LogInformation("Step 2/10 – Downloading card art... (this could take a while)");
+            _logger.LogInformation("Step {Step}/{TotalSteps} – Downloading card art... (this could take a while)", step++, totalSteps);
             bool downloadSucceeded = await _downloader.DownloadArtAsync();
 
             if (!downloadSucceeded || ct.IsCancellationRequested)
@@ -99,29 +102,25 @@ namespace ScryForge.Services
 
             _copy.CopyFilesToRoot(AppConfig.ScryfallSource);
 
-            _logger.LogInformation("Step 3/10 – Upscaling images... (this could take a while)");
-            await _upscaler.RunUpscalerAsync();
+            _logger.LogInformation("Step {Step}/{TotalSteps} – Upscaling images... (this could take a while)", step++, totalSteps);
+            await _upscaler.RunUpscalerAsync(false);
 
-            _logger.LogInformation("Step 4/10 – Parsing cards.txt...");
-            List<CardInfo> cards = _parser.ParseCards(AppConfig.CardsFile);
+            _logger.LogInformation("Step {Step}/{TotalSteps} – Parsing cards.txt...", step++, totalSteps);
+            List<CardInfo> cards = await _parser.ParseCardsAsync(AppConfig.CardsFile);
 
-            _logger.LogInformation("Step 5/10 – Duplicating double-faced cards...");
-            _copy.DuplicateCards(cards);
-
-            _logger.LogInformation("Step 6/10 – Processing flip cards...");
+            _logger.LogInformation("Step {Step}/{TotalSteps} – Processing flip cards...", step++, totalSteps);
             _flips.ProcessFlipCards(cards);
 
-            _logger.LogInformation("Step 7/10 – Generating default.pdf...");
-
+            _logger.LogInformation("Step {Step}/{TotalSteps} – Generating default.pdf...", step++, totalSteps);
             if (cards.Any(c => !c.IsFlip))
             {
-                await _pdf.RunAsync("default");
+                await _pdf.RunAsync("default", false);
             }
 
-            _logger.LogInformation("Step 8/10 – Cleaning upscaled folder (excluding flip cards)...");
+            _logger.LogInformation("Step {Step}/{TotalSteps} – Cleaning upscaled folder (excluding flip cards)...", step++, totalSteps);
             _cleanup.CleanDirectory(AppConfig.UpscaledFolder, "flips");
 
-            _logger.LogInformation("Step 9/10 – Moving default.pdf to root folder...");
+            _logger.LogInformation("Step {Step}/{TotalSteps} – Moving default.pdf to root folder...", step++, totalSteps);
             _copy.MoveFile(
                 Path.Combine(AppConfig.PdfPath, "default.pdf"),
                 Path.Combine(AppConfig.BasePath, "default.pdf"));
@@ -129,9 +128,9 @@ namespace ScryForge.Services
             if (Directory.Exists(AppConfig.FlipsFolder) &&
                 Directory.GetFiles(AppConfig.FlipsFolder).Length > 0)
             {
-                _logger.LogInformation("Flip cards detected → generating flips.pdf...");
+                _logger.LogInformation("Step {Step}/{TotalSteps} – Flip cards detected → generating flips.pdf...", step++, totalSteps);
                 _copy.CopyFolderFiles(AppConfig.FlipsFolder, AppConfig.UpscaledFolder);
-                await _pdf.RunAsync("flips");
+                await _pdf.RunAsync("flips", false);
                 _copy.MoveFile(
                     Path.Combine(AppConfig.PdfPath, "flips.pdf"),
                     Path.Combine(AppConfig.BasePath, "flips.pdf"));
@@ -139,13 +138,12 @@ namespace ScryForge.Services
             }
             else
             {
-                _logger.LogInformation("No flip cards found – skipping flips.pdf generation.");
+                _logger.LogInformation("Step {Step}/{TotalSteps} – No flip cards found – skipping flips.pdf generation.", step++, totalSteps);
             }
-
-            _logger.LogInformation("Mission was a great success!");
 
             _openfolder.OpenFolder(AppConfig.BasePath);
         }
+
 
         public override async Task StopAsync(CancellationToken cancellationToken)
         {
