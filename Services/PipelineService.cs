@@ -120,8 +120,6 @@ namespace ScryForge.Services
             _logger.LogInformation("Step {Step}/{TotalSteps} – Cleaning upscaled folder (excluding flip cards)...", step++, totalSteps);
             _cleanup.CleanDirectory(AppConfig.UpscaledFolder, "flips");
 
-            _logger.LogInformation("Step {Step}/{TotalSteps} – Moving default.pdf to root folder...", step++, totalSteps);
-
             if (cards.Any(c => !c.IsFlip))
             {
                 _copy.MoveFile(Path.Combine(AppConfig.PdfPath, "default.pdf"), Path.Combine(AppConfig.BasePath, "default.pdf"));

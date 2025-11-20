@@ -31,8 +31,8 @@ namespace ScryForge.Services
                 UseShellExecute = false,
                 CreateNoWindow = true,
                 WindowStyle = ProcessWindowStyle.Hidden,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true
+                RedirectStandardOutput = logOutput,
+                RedirectStandardError = logOutput
             };
 
             try
