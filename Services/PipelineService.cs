@@ -10,7 +10,7 @@ namespace ScryForge.Services
         private readonly CleanupService _cleanup;
         private readonly OpenFolderService _openfolder;
         private readonly CardParserService _parser;
-        private readonly DownloaderService _downloader;
+        private readonly IDownloaderService _downloader;
         private readonly UpscalerService _upscaler;
         private readonly CopyService _copy;
         private readonly FlipService _flips;
@@ -22,7 +22,7 @@ namespace ScryForge.Services
             CleanupService cleanup,
             OpenFolderService openfolder,
             CardParserService parser,
-            DownloaderService downloader,
+            IDownloaderService downloader,
             UpscalerService upscaler,
             CopyService copy,
             FlipService flips,
@@ -103,7 +103,7 @@ namespace ScryForge.Services
             _copy.CopyFilesToRoot(AppConfig.ScryfallSource);
 
             _logger.LogInformation("Step {Step}/{TotalSteps} – Upscaling images... (this could take a while)", step++, totalSteps);
-            await _upscaler.RunUpscalerAsync(false);
+            await _upscaler.RunUpscalerAsync(true);
 
             _logger.LogInformation("Step {Step}/{TotalSteps} – Parsing cards.txt...", step++, totalSteps);
             List<CardInfo> cards = await _parser.ParseCardsAsync(AppConfig.CardsFile);
@@ -114,7 +114,7 @@ namespace ScryForge.Services
             _logger.LogInformation("Step {Step}/{TotalSteps} – Generating default.pdf...", step++, totalSteps);
             if (cards.Any(c => !c.IsFlip))
             {
-                await _pdf.RunAsync("default", false);
+                await _pdf.RunAsync("default", true);
             }
 
             _logger.LogInformation("Step {Step}/{TotalSteps} – Cleaning upscaled folder (excluding flip cards)...", step++, totalSteps);
@@ -130,7 +130,7 @@ namespace ScryForge.Services
             {
                 _logger.LogInformation("Step {Step}/{TotalSteps} – Flip cards detected → generating flips.pdf...", step++, totalSteps);
                 _copy.CopyFolderFiles(AppConfig.FlipsFolder, AppConfig.UpscaledFolder);
-                await _pdf.RunAsync("flips", false);
+                await _pdf.RunAsync("flips", true);
                 _copy.MoveFile(
                     Path.Combine(AppConfig.PdfPath, "flips.pdf"),
                     Path.Combine(AppConfig.BasePath, "flips.pdf"));

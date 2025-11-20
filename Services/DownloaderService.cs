@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 
 namespace ScryForge.Services
 {
-    public class DownloaderService
+    public class DownloaderService : IDownloaderService
     {
         private readonly ILogger<DownloaderService> _logger;
 
