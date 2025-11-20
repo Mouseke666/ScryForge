@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using ScryForge.Models;
 using System.Text.RegularExpressions;
 
@@ -5,22 +6,39 @@ namespace ScryForge.Services
 {
     public class CardParserService
     {
+        private readonly ILogger<CardParserService> _logger;
+
         private static readonly Regex CardLineRegex = new(
             @"^\s*(\d+)\s+(.+?)\s+\(([A-Z0-9]+)\)\s+([^\s()]+)\s*$",
             RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
+        public CardParserService(ILogger<CardParserService> logger)
+        {
+            _logger = logger;
+        }
+
         public async Task<List<CardInfo>> ParseCardsAsync(string filePath)
         {
             var cards = new List<CardInfo>();
-            if (!File.Exists(filePath)) return cards;
+            if (!File.Exists(filePath))
+            {
+                _logger.LogWarning("File not found: {FilePath}", filePath);
+                return cards;
+            }
 
             var folder = AppConfig.UpscaledFolder;
             var lines = await File.ReadAllLinesAsync(filePath);
 
-            foreach (var line in lines)
+            var cleanedLines = lines.Select(l => l.Replace("*F*", "").Trim());
+
+            foreach (var line in cleanedLines)
             {
                 var match = CardLineRegex.Match(line);
-                if (!match.Success) continue;
+                if (!match.Success)
+                {
+                    _logger.LogWarning("Line could not be parsed: {Line}", line);
+                    continue;
+                }
 
                 var quantity = int.Parse(match.Groups[1].ValueSpan);
                 var fullName = match.Groups[2].Value.Trim();
@@ -47,11 +65,22 @@ namespace ScryForge.Services
 
                         continue;
                     }
+                    else
+                    {
+                        _logger.LogWarning("Double-sided card files not found for: {Name} [{SetCode}] {Number}", fullName, setCode, number);
+                    }
                 }
 
                 var baseFile = FindFile(folder, names[0], setCode, number);
+
                 if (baseFile != null)
+                {
                     await AddCardCopiesAsync(cards, baseFile, fullName, setCode, number, quantity);
+                }
+                else
+                {
+                    _logger.LogWarning("Card not downloaded: {Name} [{SetCode}] {Number}", fullName, setCode, number);
+                }
             }
 
             return cards;

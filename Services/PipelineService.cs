@@ -103,7 +103,7 @@ namespace ScryForge.Services
             _copy.CopyFilesToRoot(AppConfig.ScryfallSource);
 
             _logger.LogInformation("Step {Step}/{TotalSteps} – Upscaling images... (this could take a while)", step++, totalSteps);
-            await _upscaler.RunUpscalerAsync(true);
+            await _upscaler.RunUpscalerAsync(false);
 
             _logger.LogInformation("Step {Step}/{TotalSteps} – Parsing cards.txt...", step++, totalSteps);
             List<CardInfo> cards = await _parser.ParseCardsAsync(AppConfig.CardsFile);
@@ -121,9 +121,11 @@ namespace ScryForge.Services
             _cleanup.CleanDirectory(AppConfig.UpscaledFolder, "flips");
 
             _logger.LogInformation("Step {Step}/{TotalSteps} – Moving default.pdf to root folder...", step++, totalSteps);
-            _copy.MoveFile(
-                Path.Combine(AppConfig.PdfPath, "default.pdf"),
-                Path.Combine(AppConfig.BasePath, "default.pdf"));
+
+            if (cards.Any(c => !c.IsFlip))
+            {
+                _copy.MoveFile(Path.Combine(AppConfig.PdfPath, "default.pdf"), Path.Combine(AppConfig.BasePath, "default.pdf"));
+            }
 
             if (Directory.Exists(AppConfig.FlipsFolder) &&
                 Directory.GetFiles(AppConfig.FlipsFolder).Length > 0)
