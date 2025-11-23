@@ -7,9 +7,6 @@
 		<ApplicationIcon>icon.ico</ApplicationIcon>
 	</PropertyGroup>
 	<ItemGroup>
-		<None Update="ArtDownloader\**\*">
-			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
-		</None>
 		<None Update="PDF\**\*">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
