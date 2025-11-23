@@ -86,7 +86,6 @@ namespace ScryForge.Services
             int step = 1;
             int totalSteps = 9;
 
-            // Step 1 – Cleanup directories
             LogStep(ref step, totalSteps, "Cleaning up directories...");
             try
             {
@@ -100,7 +99,6 @@ namespace ScryForge.Services
                 _logger.LogError(ex, "Error during cleanup, continuing pipeline...");
             }
 
-            // Step 2 – Copy cards.txt
             LogStep(ref step, totalSteps, "Copying cards.txt to ArtDownloaderPath...");
             try
             {
@@ -113,7 +111,6 @@ namespace ScryForge.Services
                 _logger.LogError(ex, "Error copying cards.txt, continuing pipeline...");
             }
 
-            // Step 3 – Download card art
             LogStep(ref step, totalSteps, "Downloading card art... (this could take a while)");
             bool downloadSucceeded = false;
             try
@@ -127,16 +124,6 @@ namespace ScryForge.Services
                 _logger.LogError(ex, "Download step failed, continuing pipeline...");
             }
 
-            try
-            {
-                _copy.CopyFilesToRoot(AppConfig.ScryfallSource);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error copying downloaded files to root folder");
-            }
-
-            // Step 4 – Upscale images
             LogStep(ref step, totalSteps, "Upscaling images... (this could take a while)");
             try
             {
@@ -147,7 +134,6 @@ namespace ScryForge.Services
                 _logger.LogError(ex, "Upscaling step failed, continuing pipeline...");
             }
 
-            // Step 5 – Parse cards.txt
             LogStep(ref step, totalSteps, "Parsing cards.txt...");
             List<CardInfo> cards = new List<CardInfo>();
             try
@@ -159,7 +145,6 @@ namespace ScryForge.Services
                 _logger.LogError(ex, "Parsing step failed, continuing pipeline...");
             }
 
-            // Step 6 – Process flip cards
             LogStep(ref step, totalSteps, "Processing flip cards...");
             try
             {
@@ -170,7 +155,6 @@ namespace ScryForge.Services
                 _logger.LogError(ex, "Flip cards step failed, continuing pipeline...");
             }
 
-            // Step 7 – Generate default.pdf
             LogStep(ref step, totalSteps, "Generating default.pdf...");
             try
             {
@@ -185,7 +169,6 @@ namespace ScryForge.Services
                 _logger.LogError(ex, "PDF generation failed for default.pdf, continuing pipeline...");
             }
 
-            // Step 8 – Clean upscaled folder (excluding flip cards)
             LogStep(ref step, totalSteps, "Cleaning upscaled folder (excluding flip cards)...");
             try
             {
@@ -196,7 +179,6 @@ namespace ScryForge.Services
                 _logger.LogError(ex, "Cleanup after PDF failed, continuing pipeline...");
             }
 
-            // Step 9 – Generate flips.pdf if any flip cards
             LogStep(ref step, totalSteps, "Checking for flip cards and generating flips.pdf if needed...");
             try
             {
@@ -217,7 +199,6 @@ namespace ScryForge.Services
                 _logger.LogError(ex, "Flips PDF generation failed, continuing pipeline...");
             }
 
-            // Step 10 – Open folder
             LogStep(ref step, totalSteps, "Opening base folder...");
             try
             {

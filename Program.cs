@@ -12,7 +12,7 @@ internal class Program
         builder.Services.AddSingleton<CleanupService>();
         builder.Services.AddSingleton<OpenFolderService>();
         builder.Services.AddSingleton<CardParserService>();
-        builder.Services.AddSingleton<IDownloaderService, ScryForgeDownloaderService>();
+        builder.Services.AddSingleton<IDownloaderService, DownloaderService>();
         builder.Services.AddSingleton<UpscalerService>();
         builder.Services.AddSingleton<CopyService>();
         builder.Services.AddSingleton<FlipService>();
