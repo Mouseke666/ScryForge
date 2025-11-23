@@ -1,5 +1,5 @@
-using Microsoft.Extensions.Logging;
 using ScryForge.Models;
+using Microsoft.Extensions.Logging;
 
 namespace ScryForge.Services
 {
@@ -16,7 +16,7 @@ namespace ScryForge.Services
         {
             if (!Directory.Exists(path))
             {
-                _logger.LogWarning("De opgegeven map bestaat niet: {Path}", path);
+                _logger.LogWarning("Specified folder does not exist: {Path}", path);
                 return;
             }
 
@@ -46,7 +46,7 @@ namespace ScryForge.Services
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, "Fout bij kopiëren van {Source} naar {Destination}", file, destinationPath);
+                        _logger.LogError(ex, "Error copying from {Source} to {Destination}", file, destinationPath);
                     }
                 }
             }
@@ -62,7 +62,7 @@ namespace ScryForge.Services
 
                 if (files.Length == 0)
                 {
-                    _logger.LogWarning("Geen bronbestand gevonden voor kaart: {Card}", card.FrontFileName);
+                    _logger.LogWarning("No source file found for card: {Card}", card.FrontFileName);
                     continue;
                 }
 
@@ -77,7 +77,7 @@ namespace ScryForge.Services
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, "Fout bij dupliceren van {Source} naar {Destination}", src, dest);
+                        _logger.LogError(ex, "Error duplicating from {Source} to {Destination}", src, dest);
                     }
                 }
             }
@@ -104,12 +104,12 @@ namespace ScryForge.Services
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Error while copying {Source} to {Destination}", file, destPath);
+                    _logger.LogError(ex, "Error copying from {Source} to {Destination}", file, destPath);
                 }
             }
         }
 
-        public void MoveFile(string sourceFile, string destinationFolder, bool overwrite = true)
+        public void MoveFile(string sourceFile, string destinationFile, bool overwrite = true)
         {
             if (!File.Exists(sourceFile))
             {
@@ -119,21 +119,21 @@ namespace ScryForge.Services
 
             try
             {
-                if (overwrite && File.Exists(destinationFolder))
+                if (overwrite && File.Exists(destinationFile))
                 {
-                    File.Delete(destinationFolder);
+                    File.Delete(destinationFile);
                 }
 
-                File.Copy(sourceFile, destinationFolder, overwrite);
+                File.Copy(sourceFile, destinationFile, overwrite);
                 File.Delete(sourceFile);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error while moving from {Source} to {Destination}", sourceFile, destinationFolder);
+                _logger.LogError(ex, "Error moving from {Source} to {Destination}", sourceFile, destinationFile);
             }
         }
 
-        public void CopyFile(string sourceFile, string destinationFolder, bool overwrite = true)
+        public void CopyFile(string sourceFile, string destinationFile, bool overwrite = true)
         {
             if (!File.Exists(sourceFile))
             {
@@ -141,20 +141,13 @@ namespace ScryForge.Services
                 return;
             }
 
-            var path1 = Path.GetDirectoryName(destinationFolder);
-            var path2 = Path.GetFileName(sourceFile);
-
-            if (!string.IsNullOrEmpty(path1) && !string.IsNullOrEmpty(path2))
+            try
             {
-                var destPath = Path.Combine(path1, path2);
-                try
-                {
-                    File.Copy(sourceFile, destPath, overwrite);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Error copying {Source} to {Destination}", sourceFile, destPath);
-                }
+                File.Copy(sourceFile, destinationFile, overwrite);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error copying from {Source} to {Destination}", sourceFile, destinationFile);
             }
         }
     }

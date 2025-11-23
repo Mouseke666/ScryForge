@@ -60,6 +60,11 @@ namespace ScryForge.Services
             }
         }
 
+        private void LogStep(ref int step, int totalSteps, string message)
+        {
+            _logger.LogInformation("Step {Step}/{TotalSteps} – {Message}", step++, totalSteps, message);
+        }
+
         private async Task RunPipelineAsync(CancellationToken ct)
         {
             var banner = @"
@@ -81,69 +86,148 @@ namespace ScryForge.Services
             int step = 1;
             int totalSteps = 9;
 
-            _logger.LogInformation("Step {Step}/{TotalSteps} – Cleaning up directories...", step++, totalSteps);
-            _cleanup.CleanDirectory(AppConfig.ScryForgeDownloaderPath);
-            _cleanup.CleanDirectory(AppConfig.UpscaledFolder);
-            _cleanup.DeleteFile(Path.Combine(AppConfig.BasePath, "default.pdf"));
-            _cleanup.DeleteFile(Path.Combine(AppConfig.BasePath, "flips.pdf"));
-
-            _copy.CopyFile(
-                Path.Combine(AppConfig.BasePath, "cards.txt"),
-                Path.Combine(AppConfig.ArtDownloaderPath, "cards.txt"));
-
-            _logger.LogInformation("Step {Step}/{TotalSteps} – Downloading card art... (this could take a while)", step++, totalSteps);
-            bool downloadSucceeded = await _downloader.DownloadArtAsync();
-
-            if (!downloadSucceeded || ct.IsCancellationRequested)
+            // Step 1 – Cleanup directories
+            LogStep(ref step, totalSteps, "Cleaning up directories...");
+            try
             {
-                _logger.LogWarning("Download failed or was cancelled. Pipeline stopped.");
-                return;
-            }
-
-            _copy.CopyFilesToRoot(AppConfig.ScryfallSource);
-
-            _logger.LogInformation("Step {Step}/{TotalSteps} – Upscaling images... (this could take a while)", step++, totalSteps);
-            await _upscaler.RunUpscalerAsync(true, AppConfig.ScryForgeDownloaderPath);
-
-            _logger.LogInformation("Step {Step}/{TotalSteps} – Parsing cards.txt...", step++, totalSteps);
-            List<CardInfo> cards = await _parser.ParseCardsAsync(AppConfig.CardsFile);
-
-            _logger.LogInformation("Step {Step}/{TotalSteps} – Processing flip cards...", step++, totalSteps);
-            _flips.ProcessFlipCards(cards);
-
-            _logger.LogInformation("Step {Step}/{TotalSteps} – Generating default.pdf...", step++, totalSteps);
-            if (cards.Any(c => !c.IsFlip))
-            {
-                await _pdf.RunAsync("default", true);
-            }
-
-            _logger.LogInformation("Step {Step}/{TotalSteps} – Cleaning upscaled folder (excluding flip cards)...", step++, totalSteps);
-            _cleanup.CleanDirectory(AppConfig.UpscaledFolder, "flips");
-
-            if (cards.Any(c => !c.IsFlip))
-            {
-                _copy.MoveFile(Path.Combine(AppConfig.PdfPath, "default.pdf"), Path.Combine(AppConfig.BasePath, "default.pdf"));
-            }
-
-            if (Directory.Exists(AppConfig.FlipsFolder) &&
-                Directory.GetFiles(AppConfig.FlipsFolder).Length > 0)
-            {
-                _logger.LogInformation("Step {Step}/{TotalSteps} – Flip cards detected → generating flips.pdf...", step++, totalSteps);
-                _copy.CopyFolderFiles(AppConfig.FlipsFolder, AppConfig.UpscaledFolder);
-                await _pdf.RunAsync("flips", true);
-                _copy.MoveFile(
-                    Path.Combine(AppConfig.PdfPath, "flips.pdf"),
-                    Path.Combine(AppConfig.BasePath, "flips.pdf"));
+                _cleanup.CleanDirectory(AppConfig.ScryForgeDownloaderPath);
                 _cleanup.CleanDirectory(AppConfig.UpscaledFolder);
+                _cleanup.DeleteFile(Path.Combine(AppConfig.BasePath, "default.pdf"));
+                _cleanup.DeleteFile(Path.Combine(AppConfig.BasePath, "flips.pdf"));
             }
-            else
+            catch (Exception ex)
             {
-                _logger.LogInformation("Step {Step}/{TotalSteps} – No flip cards found – skipping flips.pdf generation.", step++, totalSteps);
+                _logger.LogError(ex, "Error during cleanup, continuing pipeline...");
             }
 
-            _openfolder.OpenFolder(AppConfig.BasePath);
-        }
+            // Step 2 – Copy cards.txt
+            LogStep(ref step, totalSteps, "Copying cards.txt to ArtDownloaderPath...");
+            try
+            {
+                _copy.CopyFile(
+                    Path.Combine(AppConfig.BasePath, "cards.txt"),
+                    Path.Combine(AppConfig.ArtDownloaderPath, "cards.txt"));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error copying cards.txt, continuing pipeline...");
+            }
 
+            // Step 3 – Download card art
+            LogStep(ref step, totalSteps, "Downloading card art... (this could take a while)");
+            bool downloadSucceeded = false;
+            try
+            {
+                downloadSucceeded = await _downloader.DownloadArtAsync();
+                if (!downloadSucceeded)
+                    _logger.LogWarning("Download failed, continuing pipeline...");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Download step failed, continuing pipeline...");
+            }
+
+            try
+            {
+                _copy.CopyFilesToRoot(AppConfig.ScryfallSource);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error copying downloaded files to root folder");
+            }
+
+            // Step 4 – Upscale images
+            LogStep(ref step, totalSteps, "Upscaling images... (this could take a while)");
+            try
+            {
+                await _upscaler.RunUpscalerAsync(true, AppConfig.ScryForgeDownloaderPath);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Upscaling step failed, continuing pipeline...");
+            }
+
+            // Step 5 – Parse cards.txt
+            LogStep(ref step, totalSteps, "Parsing cards.txt...");
+            List<CardInfo> cards = new List<CardInfo>();
+            try
+            {
+                cards = await _parser.ParseCardsAsync(AppConfig.CardsFile);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Parsing step failed, continuing pipeline...");
+            }
+
+            // Step 6 – Process flip cards
+            LogStep(ref step, totalSteps, "Processing flip cards...");
+            try
+            {
+                _flips.ProcessFlipCards(cards);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Flip cards step failed, continuing pipeline...");
+            }
+
+            // Step 7 – Generate default.pdf
+            LogStep(ref step, totalSteps, "Generating default.pdf...");
+            try
+            {
+                if (cards.Any(c => !c.IsFlip))
+                {
+                    await _pdf.RunAsync("default", true);
+                    _copy.MoveFile(Path.Combine(AppConfig.PdfPath, "default.pdf"), Path.Combine(AppConfig.BasePath, "default.pdf"));
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "PDF generation failed for default.pdf, continuing pipeline...");
+            }
+
+            // Step 8 – Clean upscaled folder (excluding flip cards)
+            LogStep(ref step, totalSteps, "Cleaning upscaled folder (excluding flip cards)...");
+            try
+            {
+                _cleanup.CleanDirectory(AppConfig.UpscaledFolder, "flips");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Cleanup after PDF failed, continuing pipeline...");
+            }
+
+            // Step 9 – Generate flips.pdf if any flip cards
+            LogStep(ref step, totalSteps, "Checking for flip cards and generating flips.pdf if needed...");
+            try
+            {
+                if (Directory.Exists(AppConfig.FlipsFolder) && Directory.GetFiles(AppConfig.FlipsFolder).Length > 0)
+                {
+                    _copy.CopyFolderFiles(AppConfig.FlipsFolder, AppConfig.UpscaledFolder);
+                    await _pdf.RunAsync("flips", true);
+                    _copy.MoveFile(Path.Combine(AppConfig.PdfPath, "flips.pdf"), Path.Combine(AppConfig.BasePath, "flips.pdf"));
+                    _cleanup.CleanDirectory(AppConfig.UpscaledFolder);
+                }
+                else
+                {
+                    _logger.LogInformation("No flip cards found – skipping flips.pdf generation.");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Flips PDF generation failed, continuing pipeline...");
+            }
+
+            // Step 10 – Open folder
+            LogStep(ref step, totalSteps, "Opening base folder...");
+            try
+            {
+                _openfolder.OpenFolder(AppConfig.BasePath);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Opening folder failed");
+            }
+        }
 
         public override async Task StopAsync(CancellationToken cancellationToken)
         {

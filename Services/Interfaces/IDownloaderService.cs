@@ -4,5 +4,4 @@ namespace ScryForge.Services
     {
         Task<bool> DownloadArtAsync();
     }
-
 }

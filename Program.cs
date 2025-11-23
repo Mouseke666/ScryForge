@@ -2,7 +2,6 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
-using System;
 
 internal class Program
 {
@@ -10,12 +9,10 @@ internal class Program
     {
         var builder = Host.CreateApplicationBuilder(args);
 
-        // Services
         builder.Services.AddSingleton<CleanupService>();
         builder.Services.AddSingleton<OpenFolderService>();
         builder.Services.AddSingleton<CardParserService>();
         builder.Services.AddSingleton<IDownloaderService, ScryForgeDownloaderService>();
-        //builder.Services.AddSingleton<IDownloaderService, DownloaderService>();
         builder.Services.AddSingleton<UpscalerService>();
         builder.Services.AddSingleton<CopyService>();
         builder.Services.AddSingleton<FlipService>();
@@ -23,14 +20,12 @@ internal class Program
         builder.Services.AddSingleton<PDFOpenService>();
         builder.Services.AddHostedService<PipelineService>();
 
-        // Named HttpClient voor Scryfall
         builder.Services.AddHttpClient("Scryfall", client =>
         {
             client.BaseAddress = new Uri("https://api.scryfall.com/");
             client.Timeout = TimeSpan.FromMinutes(10);
         });
 
-        // Logging
         builder.Logging.ClearProviders();
         builder.Logging.AddSimpleConsole(options =>
         {
@@ -40,9 +35,8 @@ internal class Program
             options.UseUtcTimestamp = false;
         });
 
-        // Filters
-        builder.Logging.AddFilter("System.Net.Http.HttpClient", LogLevel.Warning); // Geen info/debug van HttpClient
-        builder.Logging.AddFilter("Microsoft.Hosting.Lifetime", LogLevel.None);    // Geen host lifetime logs
+        builder.Logging.AddFilter("System.Net.Http.HttpClient", LogLevel.Warning);
+        builder.Logging.AddFilter("Microsoft.Hosting.Lifetime", LogLevel.None);
 
         await builder.Build().RunAsync();
     }

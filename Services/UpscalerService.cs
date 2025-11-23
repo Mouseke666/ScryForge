@@ -25,7 +25,7 @@ namespace ScryForge.Services
                 $"-i \"{imageSource}\" " +
                 $"-o \"{AppConfig.UpscaledFolder}\" " +
                 $"-n {AppConfig.UpscaleModel} " +
-                $"-s {AppConfig.UpscaleScale}";
+                $"-s {AppConfig.UpscaleScale} -v";
 
             var psi = new ProcessStartInfo
             {
@@ -34,18 +34,16 @@ namespace ScryForge.Services
                 WorkingDirectory = Path.GetDirectoryName(exe)!,
                 UseShellExecute = false,
                 CreateNoWindow = true,
-                RedirectStandardOutput = true,   // altijd aan
-                RedirectStandardError = true     // altijd aan
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
             };
 
             try
             {
                 using var process = new Process { StartInfo = psi };
 
-                // Start the process
                 process.Start();
 
-                // Read stdout asynchronously
                 var stdoutTask = Task.Run(async () =>
                 {
                     string? line;
@@ -56,26 +54,28 @@ namespace ScryForge.Services
                     }
                 });
 
-                // Read stderr asynchronously
                 var stderrTask = Task.Run(async () =>
                 {
                     string? line;
                     while ((line = await process.StandardError.ReadLineAsync()) != null)
                     {
-                        if (!logOutput || string.IsNullOrWhiteSpace(line))
+                        if (string.IsNullOrWhiteSpace(line))
                             continue;
 
-                        if (line.Contains("%"))
-                            _logger.LogInformation(line);
-                        else
+                        if (line.Contains("error", StringComparison.OrdinalIgnoreCase) ||
+                            line.Contains("fail", StringComparison.OrdinalIgnoreCase))
+                        {
                             _logger.LogError(line);
+                        }
+                        else
+                        {
+                            _logger.LogInformation(line);
+                        }
                     }
                 });
 
-                // Wait for exit
                 await process.WaitForExitAsync();
 
-                // Ensure output tasks finish
                 await Task.WhenAll(stdoutTask, stderrTask);
 
                 if (process.ExitCode != 0)
@@ -88,5 +88,6 @@ namespace ScryForge.Services
                 _logger.LogError(ex, "Unexpected error during upscaling");
             }
         }
+
     }
 }
