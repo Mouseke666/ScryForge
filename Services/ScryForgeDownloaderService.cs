@@ -80,7 +80,7 @@ public class ScryForgeDownloaderService : IDownloaderService
             if (json == null)
                 return false;
 
-            //await SaveScryfallJsonAsync(json, req.Name);
+            await SaveScryfallJsonAsync(json, req.Name);
 
             var card = await ParseCardAsync(json);
             if (card == null)
@@ -132,13 +132,52 @@ public class ScryForgeDownloaderService : IDownloaderService
         }
     }
 
-
     private async Task<bool> ProcessCardAsync(ScryfallCard card)
     {
+        // 1. NORMALE KAART
         if (card.ImageUris != null)
         {
-            await DownloadSingleImageAsync(card.ImageUris, card.Name, card.Set, card.CollectorNumber);
+            await DownloadSingleImageAsync(
+                card.ImageUris,
+                card.Name,
+                card.Set,
+                card.CollectorNumber
+            );
             return true;
+        }
+
+        // 2. ADVENTURE
+        if (card.Layout == "adventure")
+        {
+            // adventure kaarten hebben ALLEEN afbeelding op de front face (face 0),
+            // of op ImageUris op root niveau
+            var front = card.CardFaces?.FirstOrDefault();
+
+            if (front?.ImageUris != null)
+            {
+                await DownloadSingleImageAsync(
+                    front.ImageUris,
+                    front.Name,
+                    card.Set,
+                    card.CollectorNumber,
+                    "front"
+                );
+                return true;
+            }
+
+            if (card.ImageUris != null)
+            {
+                await DownloadSingleImageAsync(
+                    card.ImageUris,
+                    card.Name,
+                    card.Set,
+                    card.CollectorNumber
+                );
+                return true;
+            }
+
+            _logger.LogWarning("Adventure card found but has no images: {Name}", card.Name);
+            return false;
         }
 
         if (card.CardFaces != null && card.CardFaces.Count > 0)
@@ -159,7 +198,8 @@ public class ScryForgeDownloaderService : IDownloaderService
                     face.Name,
                     card.Set,
                     card.CollectorNumber,
-                    suffix);
+                    suffix
+                );
 
                 index++;
             }
@@ -170,6 +210,44 @@ public class ScryForgeDownloaderService : IDownloaderService
         _logger.LogWarning("No image_uris found for {Name}", card.Name);
         return false;
     }
+
+    // private async Task<bool> ProcessCardAsync(ScryfallCard card)
+    // {
+    //     if (card.ImageUris != null)
+    //     {
+    //         await DownloadSingleImageAsync(card.ImageUris, card.Name, card.Set, card.CollectorNumber);
+    //         return true;
+    //     }
+
+    //     if (card.CardFaces != null && card.CardFaces.Count > 0)
+    //     {
+    //         int index = 0;
+    //         foreach (var face in card.CardFaces)
+    //         {
+    //             if (face.ImageUris == null)
+    //             {
+    //                 _logger.LogWarning("Missing image_uris for face {FaceName}", face.Name);
+    //                 continue;
+    //             }
+
+    //             string suffix = index == 0 ? "front" : "back";
+
+    //             await DownloadSingleImageAsync(
+    //                 face.ImageUris,
+    //                 face.Name,
+    //                 card.Set,
+    //                 card.CollectorNumber,
+    //                 suffix);
+
+    //             index++;
+    //         }
+
+    //         return true;
+    //     }
+
+    //     _logger.LogWarning("No image_uris found for {Name}", card.Name);
+    //     return false;
+    // }
 
     private async Task DownloadSingleImageAsync(
         ImageUris imageUris, string cardName, string setCode, string collectorNumber, string? faceSuffix = null)

@@ -1,7 +1,82 @@
-1 A Mysterious Creature (TMKM) 21
-1 Cat (TZNR) 2
-1 Cat Beast (TNCC) 4
-1 Food (TELD) 17
-1 Food (TELD) 16
-1 On an Adventure (TWOE) 18
-1 Wolf (T2XM) 19
+1 Fire Lord Ozai (TLE) 104
+1 Ancient Tomb (EOS) 1
+1 Anger (PLST) JUD-77
+1 Arcane Signet (FIC) 333
+1 Avatar Roku, Firebender (TLE) 112
+1 Ayara, Widow of the Realm / Ayara, Furnace Queen (MOM) 296
+1 Azor's Gateway / Sanctum of the Sun (RIX) 176
+1 Balor (CLB) 162
+1 Battlemage's Bracers (C21) 48
+1 Black Market (JMP) 204
+1 Blasphemous Act (TLE) 26
+1 Blood Crypt (RTR) 238
+1 Body Launderer (SNC) 68
+1 Bojuka Bog (TDC) 341
+1 Braid of Fire (PLST) CSP-78 *F*
+1 Cabal Coffers (MB2) 106
+1 Calamity, Galloping Inferno (OTJ) 116
+1 Captivating Crew (LCC) 219
+1 Castle Embereth (TDC) 347
+1 Chaos Defiler (40K) 110
+1 Chaos Warp (TDC) 208
+1 Charcoal Diamond (CLB) 442
+1 Coercive Recruiter (LCC) 222
+1 Coldsteel Heart (CSP) 136
+1 Dark Ritual (SUM) 99
+1 Dawn of the Dead (TOR) 59
+1 Deadpool, Trading Card (SLD) 1753
+1 Deathrender (LRW) 255
+1 Drach'Nyen (40K) 117
+1 Elturel Survivors (CLB) 172
+1 Exotic Orchard (BLC) 131
+1 Fable of the Mirror-Breaker / Reflection of Kiki-Jiki (NEO) 465
+1 Fellwar Stone (TDC) 318
+1 Filth (PLST) JUD-66
+1 Fire Diamond (CLB) 445
+1 Fire Nation Palace (TLA) 268
+1 Gisa, Glorious Resurrector (MID) 314
+1 Graven Cairns (FIC) 401
+1 Grenzo, Dungeon Warden (A25) 205
+1 High Market (FIC) 402
+1 Homura, Human Ascendant / Homura's Essence (SOK) 103
+1 Hunted Bonebrute (MKM) 87
+1 Jaxis, the Troublemaker (SNC) 112
+1 Kiki-Jiki, Mirror Breaker (PLST) MM2-121
+1 Lightning Greaves (TDC) 102
+1 Malakir Rebirth / Malakir Mire (ZNR) 111
+1 Mimic Vat (C18) 209
+1 Mind Stone (WHO) 244
+1 Mount Doom (LTR) 258
+8 Mountain (SPM) 197
+1 Nalfeshnee (CLB) 632
+1 Necromancy (MKC) 131
+1 Nim Deathmantle (SOM) 188
+1 Oversold Cemetery (DMR) 309
+1 Phyrexian Tower (MH3) 303
+1 Rakdos Joins Up (OTJ) 225
+1 Rakdos Signet (LCC) 311
+1 Rakdos, the Muscle (OTJ) 226
+1 Rings of Brighthearth (CMR) 335
+1 Rocky Tar Pit (EOC) 173
+1 Rot-Curse Rakshasa (TDM) 87
+1 Shakedown Heavy (PSNC) 95p
+1 Smoldering Marsh (EOC) 182
+1 Sol Ring (FIC) 358
+1 Song-Mad Treachery / Song-Mad Ruins (ZNR) 165
+1 Sozin's Comet (TLA) 154
+12 Swamp (M21) 268
+1 Sword of Feast and Famine (ACR) 99
+1 Tainted Peak (M3C) 382
+1 Talisman of Indulgence (FIC) 366
+1 The Beast, Deathless Prince (WHO) 114
+1 The Rise of Sozin / Fire Lord Sozin (TLA) 117
+1 The Soul Stone (SPM) 66
+1 Thran Dynamo (BLC) 290
+1 Toxic Deluge (CMM) 191
+1 Urborg, Tomb of Yawgmoth (TSR) 287
+1 Villainous Wrath (SPM) 259
+1 Wayfarer's Bauble (FIC) 372
+1 Xu-Ifit, Osteoharmonist (EOE) 127
+1 Yawgmoth's Vile Offering (MOC) 271
+1 Zealous Conscripts (J25) 143
+1 Zuko, Conflicted (TLA) 253

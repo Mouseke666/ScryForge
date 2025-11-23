@@ -20,6 +20,7 @@ namespace ScryForge.Models
         [property: JsonPropertyName("name")] string Name,
         [property: JsonPropertyName("set")] string Set,
         [property: JsonPropertyName("collector_number")] string CollectorNumber,
+        [property: JsonPropertyName("layout")] string? Layout,                 // ← HIER!
         [property: JsonPropertyName("image_uris")] ImageUris? ImageUris,
         [property: JsonPropertyName("card_faces")] List<CardFace>? CardFaces
     );
