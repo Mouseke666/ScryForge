@@ -1,12 +1,8 @@
 using System.Text.Json;
-using System.Net.Http.Json;
-using Microsoft.Extensions.Logging;
-using System.Text.Json.Serialization;
-using System.Text.RegularExpressions;
-using System.Text;
-using System.Globalization;
 using ScryForge.Models;
 using ScryForge.Serialization;
+using Microsoft.Extensions.Logging;
+using System.Text.RegularExpressions;
 
 namespace ScryForge.Services;
 
@@ -134,7 +130,6 @@ public class ScryForgeDownloaderService : IDownloaderService
 
     private async Task<bool> ProcessCardAsync(ScryfallCard card)
     {
-        // 1. NORMALE KAART
         if (card.ImageUris != null)
         {
             await DownloadSingleImageAsync(
@@ -146,11 +141,8 @@ public class ScryForgeDownloaderService : IDownloaderService
             return true;
         }
 
-        // 2. ADVENTURE
         if (card.Layout == "adventure")
         {
-            // adventure kaarten hebben ALLEEN afbeelding op de front face (face 0),
-            // of op ImageUris op root niveau
             var front = card.CardFaces?.FirstOrDefault();
 
             if (front?.ImageUris != null)
@@ -211,44 +203,6 @@ public class ScryForgeDownloaderService : IDownloaderService
         return false;
     }
 
-    // private async Task<bool> ProcessCardAsync(ScryfallCard card)
-    // {
-    //     if (card.ImageUris != null)
-    //     {
-    //         await DownloadSingleImageAsync(card.ImageUris, card.Name, card.Set, card.CollectorNumber);
-    //         return true;
-    //     }
-
-    //     if (card.CardFaces != null && card.CardFaces.Count > 0)
-    //     {
-    //         int index = 0;
-    //         foreach (var face in card.CardFaces)
-    //         {
-    //             if (face.ImageUris == null)
-    //             {
-    //                 _logger.LogWarning("Missing image_uris for face {FaceName}", face.Name);
-    //                 continue;
-    //             }
-
-    //             string suffix = index == 0 ? "front" : "back";
-
-    //             await DownloadSingleImageAsync(
-    //                 face.ImageUris,
-    //                 face.Name,
-    //                 card.Set,
-    //                 card.CollectorNumber,
-    //                 suffix);
-
-    //             index++;
-    //         }
-
-    //         return true;
-    //     }
-
-    //     _logger.LogWarning("No image_uris found for {Name}", card.Name);
-    //     return false;
-    // }
-
     private async Task DownloadSingleImageAsync(
         ImageUris imageUris, string cardName, string setCode, string collectorNumber, string? faceSuffix = null)
     {
@@ -276,29 +230,6 @@ public class ScryForgeDownloaderService : IDownloaderService
         _logger.LogInformation("Downloaded → {FileName}", fileName);
     }
 
-
-    // private async Task DownloadImageAsync(ImageUris imageUris, string cardName, string setCode, string collectorNumber, string? faceSuffix = null)
-    // {
-    //     string imageUrl = GetBestImageUrl(imageUris);
-    //     string extension = imageUrl.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ? ".png" : ".jpg";
-
-    //     string safeName = SanitizeFileName(cardName);
-
-    //     string fileName = faceSuffix == null
-    //         ? $"{safeName}_{setCode.ToUpper()}_{collectorNumber}{extension}"
-    //         : $"{safeName}_{setCode.ToUpper()}_{collectorNumber}_{faceSuffix}{extension}";
-
-    //     string fullPath = Path.Combine(_outputFolder, fileName);
-
-    //     if (File.Exists(fullPath))
-    //         return;
-
-    //     var bytes = await _http.GetByteArrayAsync(imageUrl);
-    //     await File.WriteAllBytesAsync(fullPath, bytes);
-
-    //     _logger.LogInformation("Downloaded → {FileName}", fileName);
-    // }
-
     private static string GetBestImageUrl(ImageUris u)
     {
         return u.Png
@@ -310,45 +241,22 @@ public class ScryForgeDownloaderService : IDownloaderService
             ?? throw new Exception("No valid Scryfall image URL found.");
     }
 
-    private static async Task SaveScryfallJsonAsync(string jsonString, string cardName)
-    {
-        var invalid = Path.GetInvalidFileNameChars();
-        string safeFileName = string.Join("_", cardName.Split(invalid, StringSplitOptions.RemoveEmptyEntries)).Trim();
-
-        if (safeFileName.Length > 80)
-            safeFileName = safeFileName.Substring(0, 80);
-
-        string fileName = $"scryfall_{safeFileName}_{DateTime.Now:yyyyMMdd_HHmmss}.json";
-        string filePath = Path.Combine(AppConfig.LogPath, fileName);
-
-        var prettyJson = JsonSerializer.Serialize(
-            JsonSerializer.Deserialize<object>(jsonString),
-            new JsonSerializerOptions { WriteIndented = true });
-
-        await File.WriteAllTextAsync(filePath, prettyJson);
-    }
-
-    // private static bool TryParseLine(string line, out string name, out string? setCode, out string? collectorNumber)
+    // private static async Task SaveScryfallJsonAsync(string jsonString, string cardName)
     // {
-    //     name = "";
-    //     setCode = null;
-    //     collectorNumber = null;
+    //     var invalid = Path.GetInvalidFileNameChars();
+    //     string safeFileName = string.Join("_", cardName.Split(invalid, StringSplitOptions.RemoveEmptyEntries)).Trim();
 
-    //     if (string.IsNullOrWhiteSpace(line))
-    //         return false;
+    //     if (safeFileName.Length > 80)
+    //         safeFileName = safeFileName.Substring(0, 80);
 
-    //     var match = Regex.Match(line, @"^(.+?)\s+\(\s*([A-Z0-9]{3,5})\s*\)\s*([0-9]+[a-zA-Z]*)", RegexOptions.IgnoreCase);
+    //     string fileName = $"scryfall_{safeFileName}_{DateTime.Now:yyyyMMdd_HHmmss}.json";
+    //     string filePath = Path.Combine(AppConfig.LogPath, fileName);
 
-    //     if (match.Success)
-    //     {
-    //         name = match.Groups[1].Value.Trim();
-    //         setCode = match.Groups[2].Value.Trim().ToUpper();
-    //         collectorNumber = match.Groups[3].Value.Trim();
-    //         return true;
-    //     }
+    //     var prettyJson = JsonSerializer.Serialize(
+    //         JsonSerializer.Deserialize<object>(jsonString),
+    //         new JsonSerializerOptions { WriteIndented = true });
 
-    //     name = line.Trim();
-    //     return true;
+    //     await File.WriteAllTextAsync(filePath, prettyJson);
     // }
 
     private static bool TryParseLine(string line, out string name, out string? setCode, out string? collectorNumber)
@@ -360,10 +268,8 @@ public class ScryForgeDownloaderService : IDownloaderService
         if (string.IsNullOrWhiteSpace(line))
             return false;
 
-        // verwijder *F* of andere foil-markeringen aan het einde
         line = Regex.Replace(line, @"\*F\*\s*$", "", RegexOptions.IgnoreCase).Trim();
 
-        // Regex voor formaat: [aantal] Naam (SET) COLLECTOR
         var match = Regex.Match(line, @"^\s*(?:\d+\s+)?(.+?)\s*(?:\(\s*([A-Z0-9]{2,5})\s*\))?\s*([0-9A-Z\-]+)?\s*$", RegexOptions.IgnoreCase);
 
         if (match.Success)
@@ -378,12 +284,9 @@ public class ScryForgeDownloaderService : IDownloaderService
 
             return true;
         }
-
-        // fallback: alleen naam
         name = line.Trim();
         return true;
     }
-
 
     private static string SanitizeFileName(string name) =>
         string.Join("_", name.Split(Path.GetInvalidFileNameChars()));
