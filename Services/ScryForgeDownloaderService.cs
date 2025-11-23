@@ -80,7 +80,7 @@ public class ScryForgeDownloaderService : IDownloaderService
             if (json == null)
                 return false;
 
-            await SaveScryfallJsonAsync(json, req.Name);
+            //await SaveScryfallJsonAsync(json, req.Name);
 
             var card = await ParseCardAsync(json);
             if (card == null)
