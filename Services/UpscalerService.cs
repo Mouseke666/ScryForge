@@ -12,7 +12,7 @@ namespace ScryForge.Services
             _logger = logger;
         }
 
-        public async Task RunUpscalerAsync(bool logOutput)
+        public async Task RunUpscalerAsync(bool logOutput, string imageSource)
         {
             var exe = AppConfig.UpscalerExe;
             if (string.IsNullOrWhiteSpace(exe) || !File.Exists(exe))
@@ -21,7 +21,11 @@ namespace ScryForge.Services
                 return;
             }
 
-            var args = $"-i \"{AppConfig.ScryfallSource}\" -o \"{AppConfig.UpscaledFolder}\" -n {AppConfig.UpscaleModel} -s {AppConfig.UpscaleScale}";
+            var args =
+                $"-i \"{imageSource}\" " +
+                $"-o \"{AppConfig.UpscaledFolder}\" " +
+                $"-n {AppConfig.UpscaleModel} " +
+                $"-s {AppConfig.UpscaleScale}";
 
             var psi = new ProcessStartInfo
             {
@@ -30,43 +34,49 @@ namespace ScryForge.Services
                 WorkingDirectory = Path.GetDirectoryName(exe)!,
                 UseShellExecute = false,
                 CreateNoWindow = true,
-                WindowStyle = ProcessWindowStyle.Hidden,
-                RedirectStandardOutput = logOutput,
-                RedirectStandardError = logOutput
+                RedirectStandardOutput = true,   // altijd aan
+                RedirectStandardError = true     // altijd aan
             };
 
             try
             {
-                using var process = new Process { StartInfo = psi, EnableRaisingEvents = true };
+                using var process = new Process { StartInfo = psi };
 
-                if (logOutput)
-                {
-                    process.OutputDataReceived += (sender, e) =>
-                    {
-                        if (!string.IsNullOrEmpty(e.Data))
-                            _logger.LogInformation(e.Data);
-                    };
-
-                    process.ErrorDataReceived += (sender, e) =>
-                    {
-                        if (string.IsNullOrEmpty(e.Data)) return;
-
-                        if (e.Data.Contains("%"))
-                            _logger.LogInformation(e.Data);
-                        else
-                            _logger.LogError(e.Data);
-                    };
-                }
-
+                // Start the process
                 process.Start();
 
-                if (logOutput)
+                // Read stdout asynchronously
+                var stdoutTask = Task.Run(async () =>
                 {
-                    process.BeginOutputReadLine();
-                    process.BeginErrorReadLine();
-                }
+                    string? line;
+                    while ((line = await process.StandardOutput.ReadLineAsync()) != null)
+                    {
+                        if (logOutput && !string.IsNullOrWhiteSpace(line))
+                            _logger.LogInformation(line);
+                    }
+                });
 
+                // Read stderr asynchronously
+                var stderrTask = Task.Run(async () =>
+                {
+                    string? line;
+                    while ((line = await process.StandardError.ReadLineAsync()) != null)
+                    {
+                        if (!logOutput || string.IsNullOrWhiteSpace(line))
+                            continue;
+
+                        if (line.Contains("%"))
+                            _logger.LogInformation(line);
+                        else
+                            _logger.LogError(line);
+                    }
+                });
+
+                // Wait for exit
                 await process.WaitForExitAsync();
+
+                // Ensure output tasks finish
+                await Task.WhenAll(stdoutTask, stderrTask);
 
                 if (process.ExitCode != 0)
                 {

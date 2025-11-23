@@ -4,6 +4,8 @@ public static class AppConfig
     public static readonly string BasePath = AppDomain.CurrentDomain.BaseDirectory;
 
     public static readonly string ArtDownloaderPath = Path.Combine(BasePath, "ArtDownloader");
+    public static readonly string LogPath = Path.Combine(BasePath, "Log");
+    public static readonly string ScryForgeDownloaderPath = Path.Combine(BasePath, "Download");
     public static readonly string ArtDownloaderExe = Path.Combine(ArtDownloaderPath, "MTG Art Downloader.exe");
     public static readonly string CardsFile = Path.Combine(ArtDownloaderPath, "cards.txt");
 

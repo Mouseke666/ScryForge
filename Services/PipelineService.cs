@@ -82,7 +82,7 @@ namespace ScryForge.Services
             int totalSteps = 9;
 
             _logger.LogInformation("Step {Step}/{TotalSteps} – Cleaning up directories...", step++, totalSteps);
-            _cleanup.CleanDirectory(AppConfig.DownloadedFolder);
+            _cleanup.CleanDirectory(AppConfig.ScryForgeDownloaderPath);
             _cleanup.CleanDirectory(AppConfig.UpscaledFolder);
             _cleanup.DeleteFile(Path.Combine(AppConfig.BasePath, "default.pdf"));
             _cleanup.DeleteFile(Path.Combine(AppConfig.BasePath, "flips.pdf"));
@@ -103,7 +103,7 @@ namespace ScryForge.Services
             _copy.CopyFilesToRoot(AppConfig.ScryfallSource);
 
             _logger.LogInformation("Step {Step}/{TotalSteps} – Upscaling images... (this could take a while)", step++, totalSteps);
-            await _upscaler.RunUpscalerAsync(true);
+            await _upscaler.RunUpscalerAsync(true, AppConfig.ScryForgeDownloaderPath);
 
             _logger.LogInformation("Step {Step}/{TotalSteps} – Parsing cards.txt...", step++, totalSteps);
             List<CardInfo> cards = await _parser.ParseCardsAsync(AppConfig.CardsFile);

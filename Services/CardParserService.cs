@@ -29,22 +29,31 @@ namespace ScryForge.Services
             var folder = AppConfig.UpscaledFolder;
             var lines = await File.ReadAllLinesAsync(filePath);
 
-            var cleanedLines = lines.Select(l => l.Replace("*F*", "").Trim());
+            // Foil-markeringen verwijderen en whitespace trimmen
+            var cleanedLines = lines.Select(l => Regex.Replace(l, @"\*F\*\s*$", "", RegexOptions.IgnoreCase).Trim());
+
+            // Regex voor kaartregel: [aantal] Naam (SET) COLLECTOR
+            var cardLineRegex = new Regex(
+                @"^\s*(?:(\d+)\s+)?(.+?)\s*(?:\(\s*([A-Z0-9]{2,5})\s*\))?\s*([0-9A-Z\-]+)?\s*$",
+                RegexOptions.IgnoreCase | RegexOptions.Compiled
+            );
 
             foreach (var line in cleanedLines)
             {
-                var match = CardLineRegex.Match(line);
+                var match = cardLineRegex.Match(line);
                 if (!match.Success)
                 {
                     _logger.LogWarning("Line could not be parsed: {Line}", line);
                     continue;
                 }
 
-                var quantity = int.Parse(match.Groups[1].ValueSpan);
+                // Quantity = 1 als niet gespecificeerd
+                var quantity = match.Groups[1].Success ? int.Parse(match.Groups[1].ValueSpan) : 1;
                 var fullName = match.Groups[2].Value.Trim();
-                var setCode = match.Groups[3].Value.Trim();
-                var number = match.Groups[4].Value.Trim();
+                var setCode = match.Groups[3].Success ? match.Groups[3].Value.Trim().ToUpper() : null;
+                var number = match.Groups[4].Success ? match.Groups[4].Value.Trim() : null;
 
+                // Support voor dubbelzijdige kaarten met ' / ' in naam
                 var names = fullName.Split(" / ", 2, StringSplitOptions.TrimEntries);
 
                 if (names.Length == 2)
@@ -62,7 +71,6 @@ namespace ScryForge.Services
 
                         File.Delete(frontFile);
                         File.Delete(backFile);
-
                         continue;
                     }
                     else
@@ -71,6 +79,7 @@ namespace ScryForge.Services
                     }
                 }
 
+                // Single-sided kaart
                 var baseFile = FindFile(folder, names[0], setCode, number);
 
                 if (baseFile != null)
@@ -85,6 +94,76 @@ namespace ScryForge.Services
 
             return cards;
         }
+
+
+        // public async Task<List<CardInfo>> ParseCardsAsync(string filePath)
+        // {
+        //     var cards = new List<CardInfo>();
+        //     if (!File.Exists(filePath))
+        //     {
+        //         _logger.LogWarning("File not found: {FilePath}", filePath);
+        //         return cards;
+        //     }
+
+        //     var folder = AppConfig.UpscaledFolder;
+        //     var lines = await File.ReadAllLinesAsync(filePath);
+
+        //     var cleanedLines = lines.Select(l => l.Replace("*F*", "").Trim());
+
+        //     foreach (var line in cleanedLines)
+        //     {
+        //         var match = CardLineRegex.Match(line);
+        //         if (!match.Success)
+        //         {
+        //             _logger.LogWarning("Line could not be parsed: {Line}", line);
+        //             continue;
+        //         }
+
+        //         var quantity = int.Parse(match.Groups[1].ValueSpan);
+        //         var fullName = match.Groups[2].Value.Trim();
+        //         var setCode = match.Groups[3].Value.Trim();
+        //         var number = match.Groups[4].Value.Trim();
+
+        //         var names = fullName.Split(" / ", 2, StringSplitOptions.TrimEntries);
+
+        //         if (names.Length == 2)
+        //         {
+        //             var frontFile = FindFile(folder, names[0], setCode, number);
+        //             var backFile = FindFile(folder, names[1], setCode, number);
+
+        //             if (frontFile != null && backFile != null)
+        //             {
+        //                 for (int i = 1; i <= quantity; i++)
+        //                 {
+        //                     var cardInfo = await CopyDoubleSidedAsync(frontFile, backFile, fullName, setCode, number, i);
+        //                     cards.Add(cardInfo);
+        //                 }
+
+        //                 File.Delete(frontFile);
+        //                 File.Delete(backFile);
+
+        //                 continue;
+        //             }
+        //             else
+        //             {
+        //                 _logger.LogWarning("Double-sided card files not found for: {Name} [{SetCode}] {Number}", fullName, setCode, number);
+        //             }
+        //         }
+
+        //         var baseFile = FindFile(folder, names[0], setCode, number);
+
+        //         if (baseFile != null)
+        //         {
+        //             await AddCardCopiesAsync(cards, baseFile, fullName, setCode, number, quantity);
+        //         }
+        //         else
+        //         {
+        //             _logger.LogWarning("Card not downloaded: {Name} [{SetCode}] {Number}", fullName, setCode, number);
+        //         }
+        //     }
+
+        //     return cards;
+        // }
 
         private async Task<CardInfo> CopyDoubleSidedAsync(
             string frontFile,
