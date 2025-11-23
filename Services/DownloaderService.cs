@@ -119,7 +119,9 @@ public class DownloaderService : IDownloaderService
     {
         try
         {
-            return JsonSerializer.Deserialize(json, ScryfallJsonContext.Default.ScryfallCard);
+            return await Task.Run(() =>
+                JsonSerializer.Deserialize(json, ScryfallJsonContext.Default.ScryfallCard)
+            );
         }
         catch (Exception ex)
         {

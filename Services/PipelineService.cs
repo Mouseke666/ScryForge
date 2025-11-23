@@ -99,17 +99,17 @@ namespace ScryForge.Services
                 _logger.LogError(ex, "Error during cleanup, continuing pipeline...");
             }
 
-            LogStep(ref step, totalSteps, "Copying cards.txt to ArtDownloaderPath...");
-            try
-            {
-                _copy.CopyFile(
-                    Path.Combine(AppConfig.BasePath, "cards.txt"),
-                    Path.Combine(AppConfig.ArtDownloaderPath, "cards.txt"));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error copying cards.txt, continuing pipeline...");
-            }
+            // LogStep(ref step, totalSteps, "Copying cards.txt to ArtDownloaderPath...");
+            // try
+            // {
+            //     _copy.CopyFile(
+            //         Path.Combine(AppConfig.BasePath, "cards.txt"),
+            //         Path.Combine(AppConfig.ArtDownloaderPath, "cards.txt"));
+            // }
+            // catch (Exception ex)
+            // {
+            //     _logger.LogError(ex, "Error copying cards.txt, continuing pipeline...");
+            // }
 
             LogStep(ref step, totalSteps, "Downloading card art... (this could take a while)");
             bool downloadSucceeded = false;
