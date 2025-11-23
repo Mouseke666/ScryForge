@@ -29,6 +29,7 @@ public class ScryForgeDownloaderService : IDownloaderService
     public async Task<bool> DownloadArtAsync()
     {
         var cardsFile = Path.Combine(AppConfig.BasePath, "cards.txt");
+
         if (!File.Exists(cardsFile))
         {
             _logger.LogError("cards.txt not found: {Path}", cardsFile);
@@ -125,11 +126,13 @@ public class ScryForgeDownloaderService : IDownloaderService
                 PropertyNameCaseInsensitive = true
             });
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogError(ex, "Failed to parse JSON: {Json}", json);
             return null;
         }
     }
+
 
     private async Task<bool> ProcessCardAsync(ScryfallCard card)
     {

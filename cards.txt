@@ -1,0 +1,7 @@
+1 A Mysterious Creature (TMKM) 21
+1 Cat (TZNR) 2
+1 Cat Beast (TNCC) 4
+1 Food (TELD) 17
+1 Food (TELD) 16
+1 On an Adventure (TWOE) 18
+1 Wolf (T2XM) 19
