@@ -1,15 +1,100 @@
-1 Akroma's Will (CMR) 615
-1 All Will Be One (PONE) 118p
-1 Bloom Tender (EVE) 66
-1 Evolution Witness (MH3) 424
-1 Flawless Maneuver (C20) 26
-1 Guardian Project (PRNA) 130p
-1 Heroic Intervention (PAER) 109p
-1 Incubation Druid (PRNA) 131p
-1 Kutzil, Malamet Exemplar (LCI) 232
-1 Mana Confluence (JOU) 163
-4 Reflecting Pool (TMP) 322
-1 Return of the Wildspeaker (PELD) 172p
-1 Shamanic Revelation (FRF) 138
-1 The Ozolith (IKO) 362
-1 Toski, Bearer of Secrets (PKHM) 197p
+1 Squall, Gunblade Duelist (FIC) 453
+1 Adeline, Resplendent Cathar (J25) 57
+1 Ainok Strike Leader (TDC) 11
+1 Akroma's Will (CMR) 3
+1 Anguished Unmaking (TDC) 279
+1 Arcane Signet (FIC) 334
+1 Arid Mesa (MH2) 244
+1 Ashnod's Altar (CMM) 368
+1 Battlefield Forge (EOC) 58
+1 Bitterblossom (UMA) 85
+1 Blade of the Bloodchief (ZEN) 196
+1 Blood Crypt (SLD) 125
+1 Bloodstained Mire (MH3) 216
+1 Bloodthirster (40K) 73
+1 Braids, Arisen Nightmare (PDMU) 84p
+1 Breena, the Demagogue (OTC) 217
+1 Caesar, Legion's Emperor (PIP) 1 *F*
+1 Caves of Koilos (TDC) 348
+1 Chainsaw (DSK) 128
+1 Charismatic Conqueror (LCC) 70
+1 Command Tower (WHO) 266
+1 Curse of Opulence (TDC) 209
+1 Dalkovan Encampment (TDM) 253
+1 Damn (LCC) 191
+1 Deflecting Swat (CMM) 214
+1 Eiganjo, Seat of the Empire (NEO) 268
+1 Elegant Parlor (MKM) 260
+1 Ellie, Brick Master (SLD) 2197
+1 Excalibur, Sword of Eden (ACR) 72
+1 Exotic Orchard (LCC) 329
+1 Faithless Looting (TDC) 213
+1 Fellwar Stone (BLC) 269
+1 Fetid Heath (TDC) 362
+1 Fountainport (BLB) 368
+1 Gix, Yawgmoth Praetor (TDC) 181
+1 Goblin Bombardment (TMP) 179
+1 Goblin Rabblemaster (DDT) 46
+1 Godless Shrine (GTC) 242
+1 Graven Cairns (FIC) 401
+1 Grim Hireling (CLB) 755
+1 Idol of Oblivion (TDC) 319
+1 Impact Tremors (FDN) 717 *F*
+1 Inkshield (DSC) 221
+1 Isshin, Two Heavens as One (NEO) 224
+1 Knuckles the Echidna (SLD) 2082
+1 Krav, the Unredeemed (BBD) 4
+1 Legion Warboss (TDC) 220
+1 Life of the Party (NCC) 48
+1 Lightning Greaves (TDC) 102
+1 Loyal Apprentice (TDC) 222
+1 Luxury Suite (CLB) 355
+1 Maha, Its Feathers Night (PBLB) 100p
+1 Marsh Flats (MH2) 248
+1 Mayhem Devil (EOC) 121
+1 Midgar, City of Mako / Reactor Raid (FIN) 286
+1 Minas Tirith (LTR) 256
+1 Mountain (SNC) 269
+1 Nomad Outpost (OTC) 306
+1 Orochi Soul-Reaver (OTC) 58
+1 Path to Exile (BLC) 147
+1 Phyrexian Altar (PLST) UMA-232
+1 Pitiless Plunderer (LCC) 208
+1 Plains (TDM) 278
+1 Professional Face-Breaker (SNC) 116
+1 Purphoros, God of the Forge (CMM) 246
+1 Raucous Theater (MKM) 266
+1 Reaper's Scythe (FIC) 48
+1 Redirect Lightning (TLA) 151
+1 Reflecting Pool (CLB) 358
+1 Rev, Tithe Extractor (J25) 45
+1 Rugged Prairie (EOC) 174
+1 Sacred Foundry (PEOE) 256p
+1 Savai Triome (IKO) 253
+1 Selfless Spirit (TDC) 129
+1 Sephiroth, Fabled SOLDIER / Sephiroth, One-Winged Angel (FIN) 115
+1 Shadowy Backstreet (MKM) 268
+1 Skrelv's Hive (ONE) 34
+1 Skullclamp (FIC) 355
+1 Sokenzan, Crucible of Defiance (NEO) 276
+1 Sol Ring (DSC) 94
+1 Spectator Seating (CMR) 356
+1 Stroke of Midnight (TDC) 132
+1 Sulfurous Springs (FIC) 427
+1 Swamp (TDM) 281
+1 Swiftfoot Boots (TDC) 328
+1 Talisman of Conviction (MKC) 240
+1 Talisman of Hierarchy (LCC) 315
+1 Talisman of Indulgence (M3C) 312
+1 Toxic Deluge (MH3) 277
+1 Tymna the Weaver (PRM) 86180
+1 Urborg, Tomb of Yawgmoth (TSR) 287
+1 Vault of Champions (CMM) 436
+1 Vault of the Archangel (TDC) 410
+1 Virtue of Courage / Embereth Blaze (WOE) 282
+1 Volrath's Stronghold (STH) 143
+1 Warren Soultrader (MH3) 110
+1 Welcoming Vampire (TDC) 140
+1 Windcrag Siege (TDM) 235
+1 Witch's Clinic (DSC) 325
+1 Zurgo Stormrender (TDC) 10

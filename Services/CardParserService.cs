@@ -169,15 +169,27 @@ namespace ScryForge.Services
             await sourceStream.CopyToAsync(destinationStream);
         }
 
+        // private static List<string> FindFiles(string folder, string setCode, string number)
+        // {
+        //     if (!Directory.Exists(folder)) return new List<string>();
+
+        //     var pattern = $@"{Regex.Escape(setCode)}[_-]{Regex.Escape(number)}";
+        //     return Directory.GetFiles(folder, "*.png", SearchOption.TopDirectoryOnly)
+        //         .Where(f => Regex.IsMatch(Path.GetFileName(f), pattern, RegexOptions.IgnoreCase))
+        //         .ToList();
+        // }
         private static List<string> FindFiles(string folder, string setCode, string number)
         {
-            if (!Directory.Exists(folder)) return new List<string>();
+            if (!Directory.Exists(folder))
+                return new List<string>();
 
-            var pattern = $@"{Regex.Escape(setCode)}[_-]{Regex.Escape(number)}";
+            var pattern = $@"(?<![A-Za-z0-9]){Regex.Escape(setCode)}[_-]{Regex.Escape(number)}(?![A-Za-z0-9])";
+
             return Directory.GetFiles(folder, "*.png", SearchOption.TopDirectoryOnly)
                 .Where(f => Regex.IsMatch(Path.GetFileName(f), pattern, RegexOptions.IgnoreCase))
                 .ToList();
         }
+
 
     }
 }
