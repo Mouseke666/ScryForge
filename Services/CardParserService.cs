@@ -169,15 +169,6 @@ namespace ScryForge.Services
             await sourceStream.CopyToAsync(destinationStream);
         }
 
-        // private static List<string> FindFiles(string folder, string setCode, string number)
-        // {
-        //     if (!Directory.Exists(folder)) return new List<string>();
-
-        //     var pattern = $@"{Regex.Escape(setCode)}[_-]{Regex.Escape(number)}";
-        //     return Directory.GetFiles(folder, "*.png", SearchOption.TopDirectoryOnly)
-        //         .Where(f => Regex.IsMatch(Path.GetFileName(f), pattern, RegexOptions.IgnoreCase))
-        //         .ToList();
-        // }
         private static List<string> FindFiles(string folder, string setCode, string number)
         {
             if (!Directory.Exists(folder))
@@ -188,6 +179,40 @@ namespace ScryForge.Services
             return Directory.GetFiles(folder, "*.png", SearchOption.TopDirectoryOnly)
                 .Where(f => Regex.IsMatch(Path.GetFileName(f), pattern, RegexOptions.IgnoreCase))
                 .ToList();
+        }
+
+        public async Task<string> GetSuggestedPdfNameAsync(string filePath)
+        {
+            if (!File.Exists(filePath))
+            {
+                _logger.LogWarning("cards.txt not found for PDF name suggestion.");
+                return "cards";
+            }
+
+            var lines = await File.ReadAllLinesAsync(filePath);
+
+            var firstValidLine = lines
+                .Select(l => Regex.Replace(l, @"\*F\*\s*$", "", RegexOptions.IgnoreCase).Trim())
+                .FirstOrDefault(l => !string.IsNullOrWhiteSpace(l));
+
+            if (string.IsNullOrWhiteSpace(firstValidLine))
+                return "cards";
+
+            // Gebruik alleen de kaartnaam (zonder quantity / set / number)
+            var match = Regex.Match(
+                firstValidLine,
+                @"^\s*(?:(\d+)\s+)?(.+?)(?:\s*\(|$)",
+                RegexOptions.IgnoreCase);
+
+            var name = match.Success
+                ? match.Groups[2].Value.Trim()
+                : firstValidLine;
+
+            // Bestandsnaam veilig maken
+            foreach (var c in Path.GetInvalidFileNameChars())
+                name = name.Replace(c, '_');
+
+            return name;
         }
 
 
