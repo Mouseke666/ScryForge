@@ -125,13 +125,12 @@ public class PipelineService : BackgroundService
 
             _logger.LogInformation("Do you want to exit the program to fill up those empty slots? Press Enter to continue, or type 'Q' and press Enter to exit.");
 
-            string i = Console.ReadLine(); // veilige manier voor BackgroundService
+            string? i = Console.ReadLine();
             if (!string.IsNullOrEmpty(i) && i.Trim().ToUpper() == "Q")
             {
                 _logger.LogInformation("Exiting program by user choice.");
                 Environment.Exit(0);
             }
-            // Enter of andere invoer → doorgaan
         }
 
         // --------------------------
