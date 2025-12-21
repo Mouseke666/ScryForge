@@ -161,7 +161,7 @@ namespace ScryForge.Services
             {
                 if (cards.Any(c => !c.IsFlip))
                 {
-                    await _pdf.RunAsync(pdfBaseName, true);
+                    await _pdf.RunAsync("default", pdfBaseName, true);
                     _copy.MoveFile(
                         Path.Combine(AppConfig.PdfPath, $"{pdfBaseName}.pdf"),
                         Path.Combine(AppConfig.BasePath, $"{pdfBaseName}.pdf"));
@@ -191,7 +191,7 @@ namespace ScryForge.Services
                     string flipsName = $"{pdfBaseName}_flips";
 
                     _copy.CopyFolderFiles(AppConfig.FlipsFolder, AppConfig.UpscaledFolder);
-                    await _pdf.RunAsync(flipsName, true);
+                    await _pdf.RunAsync("flips", flipsName, true);
                     _copy.MoveFile(
                         Path.Combine(AppConfig.PdfPath, $"{flipsName}.pdf"),
                         Path.Combine(AppConfig.BasePath, $"{flipsName}.pdf"));

@@ -205,15 +205,13 @@ public class DownloaderService : IDownloaderService
         return false;
     }
 
-    private async Task DownloadSingleImageAsync(
-        ImageUris imageUris, string cardName, string setCode, string collectorNumber, string? faceSuffix = null)
+    private async Task DownloadSingleImageAsync(ImageUris imageUris, string cardName, string setCode, string collectorNumber, string? faceSuffix = null)
     {
         string imageUrl = GetBestImageUrl(imageUris);
 
-        string extension =
-            imageUrl.EndsWith(".png", StringComparison.OrdinalIgnoreCase)
-                ? ".png"
-                : ".jpg";
+        // Haal extensie van URL, negeer querystring
+        var uri = new Uri(imageUrl);
+        string extension = Path.GetExtension(uri.AbsolutePath); // dit geeft .png of .jpg
 
         string safeName = SanitizeFileName(cardName);
 
@@ -231,6 +229,7 @@ public class DownloaderService : IDownloaderService
 
         _logger.LogInformation("Downloaded → {FileName}", fileName);
     }
+
 
     private static string GetBestImageUrl(ImageUris u)
     {

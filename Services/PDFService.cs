@@ -12,7 +12,7 @@ namespace ScryForge.Services
             _logger = logger;
         }
 
-        public async Task RunAsync(string project, bool showOutput = true)
+        public async Task RunAsync(string project, string pdfFileName, bool showOutput = true)
         {
             var exe = AppConfig.PDFExe;
             if (!File.Exists(exe))
@@ -68,7 +68,7 @@ namespace ScryForge.Services
                 await process.WaitForExitAsync();
 
                 var printMeFile = Path.Combine(workingDir, "_printme.pdf");
-                var projectPdf = Path.Combine(workingDir, $"{project}.pdf");
+                var projectPdf = Path.Combine(workingDir, $"{pdfFileName}.pdf");
 
                 if (File.Exists(printMeFile))
                 {
