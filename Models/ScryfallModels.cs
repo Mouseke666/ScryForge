@@ -1,11 +1,14 @@
-
 using System.Text.Json.Serialization;
 
 namespace ScryForge.Models
 {
-    record CardRequest(string Name, string? SetCode = null, string? CollectorNumber = null);
+    public record CardRequest(
+        string Name,
+        string? SetCode = null,
+        string? CollectorNumber = null
+    );
 
-    record ImageUris
+    public record ImageUris
     (
         [property: JsonPropertyName("png")] string? Png,
         [property: JsonPropertyName("normal")] string? Normal,
@@ -15,17 +18,22 @@ namespace ScryForge.Models
         [property: JsonPropertyName("border_crop")] string? BorderCrop = null
     );
 
-    record ScryfallCard
+    public record ScryfallCard
     (
         [property: JsonPropertyName("name")] string Name,
         [property: JsonPropertyName("set")] string Set,
         [property: JsonPropertyName("collector_number")] string CollectorNumber,
-        [property: JsonPropertyName("layout")] string? Layout,                 // ← HIER!
+        [property: JsonPropertyName("layout")] string? Layout,
         [property: JsonPropertyName("image_uris")] ImageUris? ImageUris,
         [property: JsonPropertyName("card_faces")] List<CardFace>? CardFaces
-    );
+    )
+    {
+        // Boolean property die true is voor kaarten die dubbelzijdig kunnen zijn
+        public bool IsDoubleFaced => Layout is "flip" or "transform" or "modal_dfc";
+    }
 
-    record CardFace
+
+    public record CardFace
     (
         [property: JsonPropertyName("name")] string Name,
         [property: JsonPropertyName("image_uris")] ImageUris? ImageUris

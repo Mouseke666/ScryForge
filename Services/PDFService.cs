@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text.Json;
 using Microsoft.Extensions.Logging;
 
 namespace ScryForge.Services
@@ -91,6 +92,26 @@ namespace ScryForge.Services
                 if (showOutput)
                     _logger.LogError(ex, "PDF Service failed for project {Project}", project);
             }
+        }
+
+        public async Task<int> GetMaxCardsPerPage(string jsonFilePath)
+        {
+            if (!File.Exists(jsonFilePath))
+                throw new FileNotFoundException($"File not found: {jsonFilePath}");
+
+            string jsonContent = File.ReadAllText(jsonFilePath);
+            using var doc = JsonDocument.Parse(jsonContent);
+
+            var root = doc.RootElement;
+
+            if (root.TryGetProperty("card_layout_vertical", out var layout))
+            {
+                int height = layout.GetProperty("height").GetInt32();
+                int width = layout.GetProperty("width").GetInt32();
+                return height * width;
+            }
+
+            return 0;
         }
     }
 }
