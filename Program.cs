@@ -9,7 +9,7 @@ internal class Program
     {
         var builder = Host.CreateApplicationBuilder(args);
 
-        builder.Services.AddSingleton<CleanupService>();
+        builder.Services.AddSingleton<ICleanupService, CleanupService>();
         builder.Services.AddSingleton<OpenFolderService>();
         builder.Services.AddSingleton<ICardParserService, CardParserService>();
         builder.Services.AddSingleton<IDownloaderService, DownloaderService>();

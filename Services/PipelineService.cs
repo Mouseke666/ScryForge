@@ -7,7 +7,7 @@ namespace ScryForge.Services;
 public class PipelineService : BackgroundService
 {
     private readonly ILogger<PipelineService> _logger;
-    private readonly CleanupService _cleanup;
+    private readonly ICleanupService _cleanup;
     private readonly OpenFolderService _openfolder;
     private readonly ICardParserService _parser;
     private readonly IDownloaderService _downloader;
@@ -21,7 +21,7 @@ public class PipelineService : BackgroundService
 
     public PipelineService(
         ILogger<PipelineService> logger,
-        CleanupService cleanup,
+        ICleanupService cleanup,
         OpenFolderService openfolder,
         ICardParserService parser,
         IDownloaderService downloader,
@@ -76,23 +76,10 @@ public class PipelineService : BackgroundService
         int step = 1;
         int totalSteps = 11;
 
-        // --------------------------
-        // Cleanup
-        // --------------------------
         LogStep(ref step, totalSteps, "Cleaning working directories");
-        try
-        {
-            _cleanup.CleanDirectory(AppConfig.ScryForgeDownloaderPath);
-            _cleanup.CleanDirectory(AppConfig.UpscaledFolder);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Cleanup step failed");
-        }
+        await _cleanup.CleanDirectoryAsync(AppConfig.ScryForgeDownloaderPath);
+        await _cleanup.CleanDirectoryAsync(AppConfig.UpscaledFolder);
 
-        // --------------------------
-        // FETCH Scryfall JSON
-        // --------------------------
         LogStep(ref step, totalSteps, "Fetching Scryfall cards (JSON)");
 
         List<ScryfallCard> scryfallCards = [];
@@ -207,7 +194,7 @@ public class PipelineService : BackgroundService
 
         try
         {
-            _cleanup.CleanDirectory(AppConfig.UpscaledFolder, "flips");
+            await _cleanup.CleanDirectoryAsync(AppConfig.UpscaledFolder, "flips");
         }
         catch (Exception ex)
         {
@@ -233,7 +220,7 @@ public class PipelineService : BackgroundService
                     Path.Combine(AppConfig.PdfPath, $"{flipsName}.pdf"),
                     Path.Combine(AppConfig.BasePath, $"{flipsName}.pdf"));
 
-                _cleanup.CleanDirectory(AppConfig.UpscaledFolder);
+                await _cleanup.CleanDirectoryAsync(AppConfig.UpscaledFolder);
             }
             else
             {
