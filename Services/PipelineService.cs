@@ -13,7 +13,7 @@ public class PipelineService : BackgroundService
     private readonly ICardParserService _parser;
     private readonly IDownloaderService _downloader;
     private readonly UpscalerService _upscaler;
-    private readonly CopyService _copy;
+    private readonly ICopyService _copy;
     private readonly FlipService _flips;
     private readonly IPDFService _pdf;
     private readonly PDFOpenService _openPdf;
@@ -27,7 +27,7 @@ public class PipelineService : BackgroundService
         ICardParserService parser,
         IDownloaderService downloader,
         UpscalerService upscaler,
-        CopyService copy,
+        ICopyService copy,
         FlipService flips,
         IPDFService pdf,
         PDFOpenService openPdf,
@@ -111,9 +111,6 @@ public class PipelineService : BackgroundService
         LogStep(ref step, totalSteps, "Determining PDF name");
         var pdfNameResult = await _pdfNameService.DeterminePdfNameAsync(AppConfig.CardsFile);
 
-        // --------------------------
-        // DOWNLOAD IMAGES
-        // --------------------------
         LogStep(ref step, totalSteps, "Downloading card images");
 
         try
@@ -125,9 +122,6 @@ public class PipelineService : BackgroundService
             _logger.LogError(ex, "Downloading images failed");
         }
 
-        // --------------------------
-        // UPSCALE
-        // --------------------------
         LogStep(ref step, totalSteps, "Upscaling images");
 
         try
@@ -139,9 +133,6 @@ public class PipelineService : BackgroundService
             _logger.LogError(ex, "Upscaling step failed");
         }
 
-        // --------------------------
-        // PARSE CARDS.TXT
-        // --------------------------
         LogStep(ref step, totalSteps, "Parsing cards.txt");
 
         List<CardInfo> cards = new();
@@ -154,9 +145,6 @@ public class PipelineService : BackgroundService
             _logger.LogError(ex, "Parsing cards.txt failed");
         }
 
-        // --------------------------
-        // FLIPS
-        // --------------------------
         LogStep(ref step, totalSteps, "Processing flip cards");
 
         try
@@ -168,9 +156,6 @@ public class PipelineService : BackgroundService
             _logger.LogError(ex, "Processing flips failed");
         }
 
-        // --------------------------
-        // MAIN PDF
-        // --------------------------
         LogStep(ref step, totalSteps, "Generating main PDF");
 
         try
@@ -188,9 +173,6 @@ public class PipelineService : BackgroundService
             _logger.LogError(ex, "Generating main PDF failed");
         }
 
-        // --------------------------
-        // CLEAN UPSCALED (NO FLIPS)
-        // --------------------------
         LogStep(ref step, totalSteps, "Cleaning upscaled folder (excluding flips)");
 
         try
@@ -202,9 +184,6 @@ public class PipelineService : BackgroundService
             _logger.LogError(ex, "Cleaning upscaled folder failed");
         }
 
-        // --------------------------
-        // FLIPS PDF
-        // --------------------------
         LogStep(ref step, totalSteps, "Generating flips PDF if required");
 
         try
@@ -233,9 +212,6 @@ public class PipelineService : BackgroundService
             _logger.LogError(ex, "Generating flips PDF failed");
         }
 
-        // --------------------------
-        // OPEN FOLDER
-        // --------------------------
         LogStep(ref step, totalSteps, "Opening output folder");
 
         try

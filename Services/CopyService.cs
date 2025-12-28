@@ -3,7 +3,7 @@ using Microsoft.Extensions.Logging;
 
 namespace ScryForge.Services
 {
-    public class CopyService
+    public class CopyService : ICopyService
     {
         private readonly ILogger<CopyService> _logger;
 
