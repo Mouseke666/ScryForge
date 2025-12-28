@@ -14,8 +14,9 @@ public class PipelineService : BackgroundService
     private readonly UpscalerService _upscaler;
     private readonly CopyService _copy;
     private readonly FlipService _flips;
-    private readonly PDFService _pdf;
+    private readonly IPDFService _pdf;
     private readonly PDFOpenService _openPdf;
+    private readonly IEmptySlotsService _emptySlots;
 
     public PipelineService(
         ILogger<PipelineService> logger,
@@ -26,8 +27,9 @@ public class PipelineService : BackgroundService
         UpscalerService upscaler,
         CopyService copy,
         FlipService flips,
-        PDFService pdf,
-        PDFOpenService openPdf)
+        IPDFService pdf,
+        PDFOpenService openPdf,
+        IEmptySlotsService emptySlots)
     {
         _logger = logger;
         _cleanup = cleanup;
@@ -39,6 +41,7 @@ public class PipelineService : BackgroundService
         _flips = flips;
         _pdf = pdf;
         _openPdf = openPdf;
+        _emptySlots = emptySlots;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -68,7 +71,7 @@ public class PipelineService : BackgroundService
     private async Task RunPipelineAsync(CancellationToken ct)
     {
         int step = 1;
-        int totalSteps = 10;
+        int totalSteps = 11;
 
         // --------------------------
         // Cleanup
@@ -99,38 +102,12 @@ public class PipelineService : BackgroundService
             _logger.LogError(ex, "Fetching Scryfall cards failed");
         }
 
-        int maxCardsDefault = await _pdf.GetMaxCardsPerPage(Path.Combine(AppConfig.PdfPath, "default.json"));
-        int maxCardsFlips = await _pdf.GetMaxCardsPerPage(Path.Combine(AppConfig.PdfPath, "flips.json"));
-        int defaultCount = scryfallCards.Count(c => !c.IsDoubleFaced);
-        int flipsCount = scryfallCards.Count(c => c.IsDoubleFaced);
+        var emptySlotsResult = await _emptySlots.AnalyzeAsync(scryfallCards, ct);
 
-        int fullPagesDefault = defaultCount / maxCardsDefault;
-        int remainingCardsDefault = defaultCount % maxCardsDefault;
-
-        int fullPagesFlips = flipsCount / maxCardsFlips;
-        int remainingCardsFlips = flipsCount % maxCardsFlips;
-
-        int emptySlotsDefault = remainingCardsDefault > 0 ? maxCardsDefault - remainingCardsDefault : 0;
-        int emptySlotsFlips = remainingCardsFlips > 0 ? maxCardsFlips - remainingCardsFlips : 0;
-
-        bool hasEmptySlots = emptySlotsDefault > 0 || emptySlotsFlips > 0;
-
-        if (hasEmptySlots)
+        if (emptySlotsResult.ShouldStopPipeline)
         {
-            if (emptySlotsDefault > 0)
-                _logger.LogInformation("There are {EmptySlots} empty slot(s) on the last page of default cards.", emptySlotsDefault);
-
-            if (emptySlotsFlips > 0)
-                _logger.LogInformation("There are {EmptySlots} empty slot(s) on the last page of double-faced cards.", emptySlotsFlips);
-
-            _logger.LogInformation("Do you want to exit the program to fill up those empty slots? Press Enter to continue, or type 'Q' and press Enter to exit.");
-
-            string? i = Console.ReadLine();
-            if (!string.IsNullOrEmpty(i) && i.Trim().ToUpper() == "Q")
-            {
-                _logger.LogInformation("Exiting program by user choice.");
-                Environment.Exit(0);
-            }
+            _logger.LogInformation("Exiting program by user choice.");
+            return;
         }
 
         // --------------------------

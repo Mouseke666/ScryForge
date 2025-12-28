@@ -16,8 +16,9 @@ internal class Program
         builder.Services.AddSingleton<UpscalerService>();
         builder.Services.AddSingleton<CopyService>();
         builder.Services.AddSingleton<FlipService>();
-        builder.Services.AddSingleton<PDFService>();
+        builder.Services.AddSingleton<IPDFService, PDFService>();
         builder.Services.AddSingleton<PDFOpenService>();
+        builder.Services.AddSingleton<IEmptySlotsService, EmptySlotsService>();
         builder.Services.AddHostedService<PipelineService>();
 
         builder.Services.AddHttpClient("Scryfall", client =>

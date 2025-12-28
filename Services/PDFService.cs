@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 
 namespace ScryForge.Services
 {
-    public class PDFService
+    public class PDFService : IPDFService
     {
         private readonly ILogger<PDFService> _logger;
 
