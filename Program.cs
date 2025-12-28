@@ -1,6 +1,7 @@
 ﻿using ScryForge.Services;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using ScryForge.Services.Intefaces;
 using Microsoft.Extensions.DependencyInjection;
 
 internal class Program

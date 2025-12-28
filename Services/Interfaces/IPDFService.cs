@@ -1,7 +1,8 @@
-namespace ScryForge.Services;
-
-public interface IPDFService
+namespace ScryForge.Services.Intefaces
 {
-    Task RunAsync(string project, string pdfFileName, bool showOutput = true);
-    Task<int> GetMaxCardsPerPage(string jsonFilePath);
+    public interface IPDFService
+    {
+        Task RunAsync(string project, string pdfFileName, bool showOutput = true);
+        Task<int> GetMaxCardsPerPage(string jsonFilePath);
+    }
 }

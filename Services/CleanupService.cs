@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using ScryForge.Services.Intefaces;
 
 namespace ScryForge.Services;
 

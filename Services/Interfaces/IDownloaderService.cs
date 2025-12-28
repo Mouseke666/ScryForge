@@ -1,9 +1,10 @@
 using ScryForge.Models;
 
-namespace ScryForge.Services;
-
-public interface IDownloaderService
+namespace ScryForge.Services.Intefaces
 {
-    Task<IReadOnlyList<ScryfallCard>> FetchScryfallCardsAsync();
-    Task DownloadImagesAsync(IEnumerable<ScryfallCard> cards);
+    public interface IDownloaderService
+    {
+        Task<IReadOnlyList<ScryfallCard>> FetchScryfallCardsAsync(CancellationToken ct = default);
+        Task DownloadImagesAsync(IReadOnlyList<ScryfallCard> cards, CancellationToken ct = default);
+    }
 }

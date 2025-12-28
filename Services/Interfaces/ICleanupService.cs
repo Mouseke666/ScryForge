@@ -1,4 +1,4 @@
-namespace ScryForge.Services
+namespace ScryForge.Services.Intefaces
 {
     public interface ICleanupService
     {
