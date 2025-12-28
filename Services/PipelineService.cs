@@ -9,7 +9,7 @@ public class PipelineService : BackgroundService
     private readonly ILogger<PipelineService> _logger;
     private readonly CleanupService _cleanup;
     private readonly OpenFolderService _openfolder;
-    private readonly CardParserService _parser;
+    private readonly ICardParserService _parser;
     private readonly IDownloaderService _downloader;
     private readonly UpscalerService _upscaler;
     private readonly CopyService _copy;
@@ -17,19 +17,21 @@ public class PipelineService : BackgroundService
     private readonly IPDFService _pdf;
     private readonly PDFOpenService _openPdf;
     private readonly IEmptySlotsService _emptySlots;
+    private readonly IPDFNameService _pdfNameService;
 
     public PipelineService(
         ILogger<PipelineService> logger,
         CleanupService cleanup,
         OpenFolderService openfolder,
-        CardParserService parser,
+        ICardParserService parser,
         IDownloaderService downloader,
         UpscalerService upscaler,
         CopyService copy,
         FlipService flips,
         IPDFService pdf,
         PDFOpenService openPdf,
-        IEmptySlotsService emptySlots)
+        IEmptySlotsService emptySlots,
+        IPDFNameService pdfNameService)
     {
         _logger = logger;
         _cleanup = cleanup;
@@ -42,6 +44,7 @@ public class PipelineService : BackgroundService
         _pdf = pdf;
         _openPdf = openPdf;
         _emptySlots = emptySlots;
+        _pdfNameService = pdfNameService;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -117,26 +120,8 @@ public class PipelineService : BackgroundService
             return;
         }
 
-        // --------------------------
-        // PDF name
-        // --------------------------
         LogStep(ref step, totalSteps, "Determining PDF name");
-
-        string suggestedName = await _parser.GetSuggestedPdfNameAsync(AppConfig.CardsFile);
-        string timestamp = DateTime.Now.ToString("dd-MM-yyyy_HH-mm-ss");
-
-        _logger.LogInformation("Suggested PDF name: {Name}", suggestedName);
-        _logger.LogInformation("Enter PDF name (press Enter to accept):");
-
-        Console.Write("> ");
-        var input = Console.ReadLine();
-
-        string pdfBaseName = string.IsNullOrWhiteSpace(input)
-            ? suggestedName
-            : input.Trim();
-
-        pdfBaseName = $"{pdfBaseName}_{timestamp}";
-        _logger.LogInformation("Using PDF base name: {Name}", pdfBaseName);
+        var pdfNameResult = await _pdfNameService.DeterminePdfNameAsync(AppConfig.CardsFile);
 
         // --------------------------
         // DOWNLOAD IMAGES
@@ -145,14 +130,7 @@ public class PipelineService : BackgroundService
 
         try
         {
-            if (scryfallCards.Any())
-            {
-                await _downloader.DownloadImagesAsync(scryfallCards);
-            }
-            else
-            {
-                _logger.LogWarning("No Scryfall cards to download");
-            }
+            await _downloader.DownloadImagesAsync(scryfallCards);
         }
         catch (Exception ex)
         {
@@ -211,10 +189,10 @@ public class PipelineService : BackgroundService
         {
             if (cards.Any(c => !c.IsFlip))
             {
-                await _pdf.RunAsync("default", pdfBaseName, true);
+                await _pdf.RunAsync("default", pdfNameResult.BaseName, true);
                 _copy.MoveFile(
-                    Path.Combine(AppConfig.PdfPath, $"{pdfBaseName}.pdf"),
-                    Path.Combine(AppConfig.BasePath, $"{pdfBaseName}.pdf"));
+                    Path.Combine(AppConfig.PdfPath, $"{pdfNameResult.BaseName}.pdf"),
+                    Path.Combine(AppConfig.BasePath, $"{pdfNameResult.BaseName}.pdf"));
             }
         }
         catch (Exception ex)
@@ -246,7 +224,7 @@ public class PipelineService : BackgroundService
             if (Directory.Exists(AppConfig.FlipsFolder) &&
                 Directory.GetFiles(AppConfig.FlipsFolder).Any())
             {
-                string flipsName = $"{pdfBaseName}_flips";
+                string flipsName = $"{pdfNameResult.BaseName}_flips";
 
                 _copy.CopyFolderFiles(AppConfig.FlipsFolder, AppConfig.UpscaledFolder);
                 await _pdf.RunAsync("flips", flipsName, true);

@@ -4,7 +4,7 @@ using System.Text.RegularExpressions;
 
 namespace ScryForge.Services
 {
-    public class CardParserService
+    public class CardParserService : ICardParserService
     {
         private readonly ILogger<CardParserService> _logger;
 

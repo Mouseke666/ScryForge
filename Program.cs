@@ -11,7 +11,7 @@ internal class Program
 
         builder.Services.AddSingleton<CleanupService>();
         builder.Services.AddSingleton<OpenFolderService>();
-        builder.Services.AddSingleton<CardParserService>();
+        builder.Services.AddSingleton<ICardParserService, CardParserService>();
         builder.Services.AddSingleton<IDownloaderService, DownloaderService>();
         builder.Services.AddSingleton<UpscalerService>();
         builder.Services.AddSingleton<CopyService>();
@@ -19,6 +19,7 @@ internal class Program
         builder.Services.AddSingleton<IPDFService, PDFService>();
         builder.Services.AddSingleton<PDFOpenService>();
         builder.Services.AddSingleton<IEmptySlotsService, EmptySlotsService>();
+        builder.Services.AddSingleton<IPDFNameService, PDFNameService>();
         builder.Services.AddHostedService<PipelineService>();
 
         builder.Services.AddHttpClient("Scryfall", client =>
