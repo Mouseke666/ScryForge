@@ -92,7 +92,7 @@ public class PipelineService : BackgroundService
         // --------------------------
         LogStep(ref step, totalSteps, "Fetching Scryfall cards (JSON)");
 
-        List<ScryfallCard> scryfallCards = new();
+        List<ScryfallCard> scryfallCards = [];
         try
         {
             scryfallCards = (await _downloader.FetchScryfallCardsAsync()).ToList();
@@ -100,6 +100,13 @@ public class PipelineService : BackgroundService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Fetching Scryfall cards failed");
+            return;
+        }
+
+        if (scryfallCards.Count == 0)
+        {
+            _logger.LogWarning("No cards fetched from Scryfall. Aborting pipeline.");
+            return;
         }
 
         var emptySlotsResult = await _emptySlots.AnalyzeAsync(scryfallCards, ct);
