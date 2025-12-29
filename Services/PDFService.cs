@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
+using ScryForge.Models;
 using ScryForge.Services.Intefaces;
 
 namespace ScryForge.Services
@@ -8,10 +9,14 @@ namespace ScryForge.Services
     public class PDFService : IPDFService
     {
         private readonly ILogger<PDFService> _logger;
+        private readonly ICopyService _copy;
+        private readonly ICleanupService _cleanup;
 
-        public PDFService(ILogger<PDFService> logger)
+        public PDFService(ILogger<PDFService> logger, ICopyService copy, ICleanupService cleanup)
         {
             _logger = logger;
+            _copy = copy;
+            _cleanup = cleanup;
         }
 
         public async Task RunAsync(string project, string pdfFileName, bool showOutput = true)
@@ -94,6 +99,55 @@ namespace ScryForge.Services
                     _logger.LogError(ex, "PDF Service failed for project {Project}", project);
             }
         }
+
+        public async Task GenerateMainPdfAsync(string baseName, IEnumerable<CardInfo> cards)
+        {
+            if (!cards.Any(c => !c.IsFlip))
+                return;
+
+            try
+            {
+                await RunAsync("default", baseName, true);
+                _copy.MoveFile(
+                    Path.Combine(AppConfig.PdfPath, $"{baseName}.pdf"),
+                    Path.Combine(AppConfig.BasePath, $"{baseName}.pdf"));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Generating main PDF failed");
+            }
+        }
+
+        public async Task GenerateFlipsPdfAsync(string baseName)
+        {
+            if (!Directory.Exists(AppConfig.FlipsFolder) ||
+                !Directory.GetFiles(AppConfig.FlipsFolder).Any())
+            {
+                _logger.LogInformation("No flip cards found");
+                return;
+            }
+
+            try
+            {
+                string flipsName = $"{baseName}_flips";
+
+                // Kopieer alle flips naar de upscaled folder
+                _copy.CopyFolderFiles(AppConfig.FlipsFolder, AppConfig.UpscaledFolder);
+
+                await RunAsync("flips", flipsName, true);
+
+                _copy.MoveFile(
+                    Path.Combine(AppConfig.PdfPath, $"{flipsName}.pdf"),
+                    Path.Combine(AppConfig.BasePath, $"{flipsName}.pdf"));
+
+                await _cleanup.CleanDirectoryAsync(AppConfig.UpscaledFolder);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Generating flips PDF failed");
+            }
+        }
+
 
         public async Task<int> GetMaxCardsPerPage(string jsonFilePath)
         {

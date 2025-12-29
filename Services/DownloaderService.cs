@@ -214,18 +214,6 @@ public class DownloaderService : IDownloaderService
                 $"set:{req.SetCode.ToLowerInvariant()}+" +
                 $"cn:\"{EscapeQuery(req.CollectorNumber)}\"";
         }
-
-        if (!string.IsNullOrWhiteSpace(req.Name))
-        {
-            yield return
-                $"cards/search?q=!\"{EscapeQuery(req.Name)}\"&unique=prints";
-        }
-
-        if (!string.IsNullOrWhiteSpace(req.Name))
-        {
-            yield return
-                $"cards/named?fuzzy={WebUtility.UrlEncode(req.Name)}";
-        }
     }
 
     private static string EscapeQuery(string value)

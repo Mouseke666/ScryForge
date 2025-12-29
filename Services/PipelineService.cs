@@ -83,7 +83,7 @@ public class PipelineService : BackgroundService
 
         LogStep(ref step, totalSteps, "Fetching Scryfall cards (JSON)");
 
-        List<ScryfallCard> scryfallCards = [];
+        List<ScryfallCard> scryfallCards;
         try
         {
             scryfallCards = (await _downloader.FetchScryfallCardsAsync()).ToList();
@@ -101,7 +101,6 @@ public class PipelineService : BackgroundService
         }
 
         var emptySlotsResult = await _emptySlots.AnalyzeAsync(scryfallCards, ct);
-
         if (emptySlotsResult.ShouldStopPipeline)
         {
             _logger.LogInformation("Exiting program by user choice.");
@@ -112,7 +111,6 @@ public class PipelineService : BackgroundService
         var pdfNameResult = await _pdfNameService.DeterminePdfNameAsync(AppConfig.CardsFile);
 
         LogStep(ref step, totalSteps, "Downloading card images");
-
         try
         {
             await _downloader.DownloadImagesAsync(scryfallCards);
@@ -123,7 +121,6 @@ public class PipelineService : BackgroundService
         }
 
         LogStep(ref step, totalSteps, "Upscaling images");
-
         try
         {
             await _upscaler.RunUpscalerAsync(true, AppConfig.ScryForgeDownloaderPath);
@@ -134,7 +131,6 @@ public class PipelineService : BackgroundService
         }
 
         LogStep(ref step, totalSteps, "Parsing cards.txt");
-
         List<CardInfo> cards = new();
         try
         {
@@ -146,7 +142,6 @@ public class PipelineService : BackgroundService
         }
 
         LogStep(ref step, totalSteps, "Processing flip cards");
-
         try
         {
             _flips.ProcessFlipCards(cards);
@@ -157,16 +152,9 @@ public class PipelineService : BackgroundService
         }
 
         LogStep(ref step, totalSteps, "Generating main PDF");
-
         try
         {
-            if (cards.Any(c => !c.IsFlip))
-            {
-                await _pdf.RunAsync("default", pdfNameResult.BaseName, true);
-                _copy.MoveFile(
-                    Path.Combine(AppConfig.PdfPath, $"{pdfNameResult.BaseName}.pdf"),
-                    Path.Combine(AppConfig.BasePath, $"{pdfNameResult.BaseName}.pdf"));
-            }
+            await _pdf.GenerateMainPdfAsync(pdfNameResult.BaseName, cards);
         }
         catch (Exception ex)
         {
@@ -174,7 +162,6 @@ public class PipelineService : BackgroundService
         }
 
         LogStep(ref step, totalSteps, "Cleaning upscaled folder (excluding flips)");
-
         try
         {
             await _cleanup.CleanDirectoryAsync(AppConfig.UpscaledFolder, "flips");
@@ -185,27 +172,9 @@ public class PipelineService : BackgroundService
         }
 
         LogStep(ref step, totalSteps, "Generating flips PDF if required");
-
         try
         {
-            if (Directory.Exists(AppConfig.FlipsFolder) &&
-                Directory.GetFiles(AppConfig.FlipsFolder).Any())
-            {
-                string flipsName = $"{pdfNameResult.BaseName}_flips";
-
-                _copy.CopyFolderFiles(AppConfig.FlipsFolder, AppConfig.UpscaledFolder);
-                await _pdf.RunAsync("flips", flipsName, true);
-
-                _copy.MoveFile(
-                    Path.Combine(AppConfig.PdfPath, $"{flipsName}.pdf"),
-                    Path.Combine(AppConfig.BasePath, $"{flipsName}.pdf"));
-
-                await _cleanup.CleanDirectoryAsync(AppConfig.UpscaledFolder);
-            }
-            else
-            {
-                _logger.LogInformation("No flip cards found");
-            }
+            await _pdf.GenerateFlipsPdfAsync(pdfNameResult.BaseName);
         }
         catch (Exception ex)
         {
@@ -213,7 +182,6 @@ public class PipelineService : BackgroundService
         }
 
         LogStep(ref step, totalSteps, "Opening output folder");
-
         try
         {
             _openfolder.OpenFolder(AppConfig.BasePath);
