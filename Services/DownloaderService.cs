@@ -117,63 +117,144 @@ public class DownloaderService : IDownloaderService
         }
     }
 
-    private async Task<string?> FetchCardJsonWithRetryAsync(CardRequest req, CancellationToken ct, int maxRetries = 3)
+    private async Task<string?> FetchCardJsonWithRetryAsync(
+    CardRequest req,
+    CancellationToken ct,
+    int maxRetries = 3)
     {
+        ArgumentNullException.ThrowIfNull(req);
+        ct.ThrowIfCancellationRequested();
+
+        var urls = BuildCandidateUrls(req).ToList();
+
         for (int attempt = 1; attempt <= maxRetries; attempt++)
         {
             ct.ThrowIfCancellationRequested();
 
-            string url =
-                req.SetCode != null && req.CollectorNumber != null
-                    ? $"cards/{req.SetCode.ToLowerInvariant()}/{req.CollectorNumber.ToLowerInvariant()}"
-                        : $"cards/named?fuzzy={WebUtility.UrlEncode(req.Name.ToLowerInvariant())}";
-
-            try
+            foreach (var url in urls)
             {
-                using var response = await _http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, ct);
+                try
+                {
+                    using var response = await _http.GetAsync(
+                        url,
+                        HttpCompletionOption.ResponseHeadersRead,
+                        ct);
 
-                if (response.IsSuccessStatusCode)
-                {
-                    return await response.Content.ReadAsStringAsync(ct);
-                }
+                    if (response.IsSuccessStatusCode)
+                    {
+                        // var json = await response.Content.ReadAsStringAsync(ct);
+                        // _logger.LogInformation("Fetched JSON: {Json}", json);
+                        // return json;
+                        return await response.Content.ReadAsStringAsync(ct);
+                    }
 
-                if (response.StatusCode == HttpStatusCode.NotFound)
-                {
-                    _logger.LogWarning("Card not found: {Name} [{Set} {Cn}]", req.Name, req.SetCode, req.CollectorNumber);
-                    return null;
-                }
+                    if (response.StatusCode == HttpStatusCode.NotFound)
+                    {
+                        continue;
+                    }
 
-                if ((int)response.StatusCode == 429 && attempt < maxRetries)
-                {
-                    _logger.LogWarning("Rate limited by Scryfall (attempt {Attempt}/{Max}). Waiting 100ms...", attempt, maxRetries);
-                    await Task.Delay(100, ct);
-                    continue;
+                    if ((int)response.StatusCode == 429 && attempt < maxRetries)
+                    {
+                        _logger.LogWarning(
+                            "Rate limited by Scryfall (attempt {Attempt}/{Max}). Waiting 200ms...",
+                            attempt,
+                            maxRetries);
+
+                        await Task.Delay(200, ct);
+                        break;
+                    }
                 }
-            }
-            catch (HttpRequestException ex)
-            {
-                _logger.LogWarning(ex, "Network error fetching card data (attempt {Attempt}/{Max}): {Name}", attempt, maxRetries, req.Name);
-                if (attempt < maxRetries)
+                catch (HttpRequestException ex)
                 {
-                    await Task.Delay(200 * attempt, ct);
-                    continue;
+                    _logger.LogWarning(
+                        ex,
+                        "Network error fetching card data (attempt {Attempt}/{Max}): {Name}",
+                        attempt,
+                        maxRetries,
+                        req.Name);
+
+                    if (attempt < maxRetries)
+                    {
+                        await Task.Delay(200 * attempt, ct);
+                        break;
+                    }
                 }
-            }
-            catch (TaskCanceledException) when (ct.IsCancellationRequested)
-            {
-                throw;
+                catch (TaskCanceledException) when (ct.IsCancellationRequested)
+                {
+                    throw;
+                }
             }
         }
 
-        _logger.LogError("Failed to fetch card after {MaxRetries} attempts: {Name} [{Set} {Cn}]", maxRetries, req.Name, req.SetCode, req.CollectorNumber);
+        _logger.LogError(
+            "Failed to fetch card after {MaxRetries} attempts: {Name} [{Set} {Cn}]",
+            maxRetries,
+            req.Name,
+            req.SetCode,
+            req.CollectorNumber);
+
         return null;
+    }
+
+    private IEnumerable<string> BuildCandidateUrls(CardRequest req)
+    {
+        if (!string.IsNullOrWhiteSpace(req.SetCode) &&
+            !string.IsNullOrWhiteSpace(req.CollectorNumber))
+        {
+            yield return
+                $"cards/{req.SetCode.ToLowerInvariant()}/" +
+                $"{WebUtility.UrlEncode(req.CollectorNumber)}";
+        }
+
+        if (!string.IsNullOrWhiteSpace(req.SetCode) &&
+            !string.IsNullOrWhiteSpace(req.CollectorNumber))
+        {
+            yield return
+                $"cards/search?q=" +
+                $"set:{req.SetCode.ToLowerInvariant()}+" +
+                $"cn:\"{EscapeQuery(req.CollectorNumber)}\"";
+        }
+
+        if (!string.IsNullOrWhiteSpace(req.Name))
+        {
+            yield return
+                $"cards/search?q=!\"{EscapeQuery(req.Name)}\"&unique=prints";
+        }
+
+        if (!string.IsNullOrWhiteSpace(req.Name))
+        {
+            yield return
+                $"cards/named?fuzzy={WebUtility.UrlEncode(req.Name)}";
+        }
+    }
+
+    private static string EscapeQuery(string value)
+    {
+        return value.Replace("\"", "\\\"");
     }
 
     private static ScryfallCard? ParseCard(string json)
     {
         try
         {
-            return JsonSerializer.Deserialize(json, ScryfallJsonContext.Default.ScryfallCard);
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+
+            if (root.TryGetProperty("id", out _))
+            {
+                return JsonSerializer.Deserialize<ScryfallCard>(json, ScryfallJsonContext.Default.ScryfallCard);
+            }
+
+            if (root.TryGetProperty("data", out var dataElement) && dataElement.ValueKind == JsonValueKind.Array)
+            {
+                if (dataElement.GetArrayLength() > 0)
+                {
+                    var firstCardJson = dataElement[0].GetRawText();
+                    return JsonSerializer.Deserialize<ScryfallCard>(firstCardJson, ScryfallJsonContext.Default.ScryfallCard);
+                }
+            }
+
+            return null;
         }
         catch
         {

@@ -1,7 +1,7 @@
 using ScryForge.Models;
+using ScryForge.Services.Intefaces;
 using Microsoft.Extensions.Logging;
 using System.Text.RegularExpressions;
-using ScryForge.Services.Intefaces;
 
 namespace ScryForge.Services
 {
@@ -31,7 +31,6 @@ namespace ScryForge.Services
             var folder = AppConfig.UpscaledFolder;
             var lines = await File.ReadAllLinesAsync(filePath);
 
-            // Remove foil markers + trim
             var cleanedLines = lines.Select(l => Regex.Replace(l, @"\*F\*\s*$", "", RegexOptions.IgnoreCase).Trim());
 
             var cardLineRegex = new Regex(
@@ -61,7 +60,14 @@ namespace ScryForge.Services
 
                 string[] names = fullName.Split(" / ", 2, StringSplitOptions.TrimEntries);
 
-                var files = FindFiles(folder, setCode, number);
+                List<string> files = new();
+
+                foreach (var cn in GetCollectorNumberVariants(number))
+                {
+                    files = FindFiles(folder, setCode, cn);
+                    if (files.Count > 0)
+                        break;
+                }
 
                 if (files.Count == 2)
                 {
@@ -89,6 +95,18 @@ namespace ScryForge.Services
             }
 
             return cards;
+        }
+
+        private static IEnumerable<string> GetCollectorNumberVariants(string number)
+        {
+            yield return number;
+
+            yield return number.ToUpperInvariant();
+
+            if (number.EndsWith("p", StringComparison.OrdinalIgnoreCase))
+            {
+                yield return number[..^1];
+            }
         }
 
         private async Task<CardInfo> CopyDoubleSidedAsync(
@@ -199,7 +217,6 @@ namespace ScryForge.Services
             if (string.IsNullOrWhiteSpace(firstValidLine))
                 return "cards";
 
-            // Gebruik alleen de kaartnaam (zonder quantity / set / number)
             var match = Regex.Match(
                 firstValidLine,
                 @"^\s*(?:(\d+)\s+)?(.+?)(?:\s*\(|$)",
@@ -209,13 +226,11 @@ namespace ScryForge.Services
                 ? match.Groups[2].Value.Trim()
                 : firstValidLine;
 
-            // Bestandsnaam veilig maken
             foreach (var c in Path.GetInvalidFileNameChars())
                 name = name.Replace(c, '_');
 
             return name;
         }
-
 
     }
 }

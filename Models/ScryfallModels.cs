@@ -28,7 +28,6 @@ namespace ScryForge.Models
         [property: JsonPropertyName("card_faces")] List<CardFace>? CardFaces
     )
     {
-        // Boolean property die true is voor kaarten die dubbelzijdig kunnen zijn
         public bool IsDoubleFaced => Layout is "flip" or "transform" or "modal_dfc";
     }
 
@@ -38,4 +37,19 @@ namespace ScryForge.Models
         [property: JsonPropertyName("name")] string Name,
         [property: JsonPropertyName("image_uris")] ImageUris? ImageUris
     );
+
+    public class ScryfallCardList
+    {
+        [JsonPropertyName("object")]
+        public string Object { get; set; } = null!;
+
+        [JsonPropertyName("total_cards")]
+        public int TotalCards { get; set; }
+
+        [JsonPropertyName("has_more")]
+        public bool HasMore { get; set; }
+
+        [JsonPropertyName("data")]
+        public List<ScryfallCard> Data { get; set; } = new();
+    }
 }
