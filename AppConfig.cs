@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Configuration;
 
 public static class AppConfig
 {
@@ -13,6 +14,27 @@ public static class AppConfig
     public static readonly string UpscalerExe = Path.Combine(UpscalerPath, "realesrgan-ncnn-vulkan.exe");
     public static readonly string PDFPath = Path.Combine(BasePath, "PDF");
     public static readonly string PDFExe = Path.Combine(PDFPath, "proxy_pdf_cli.exe");
-    public const string UpscaleModel = "digital-art-4x";
-    public const int UpscaleScale = 4;
+    public static string UpscaleModel { get; private set; } = "digital-art-4x";
+    public static int UpscaleScale { get; private set; } = 4;
+    public static bool AutoFillEmptySlots { get; private set; } = false;
+    public static bool AutoUseSuggestedName { get; private set; } = false;
+
+    public static void Initialize(IConfiguration config)
+    {
+        UpscaleModel = config["Upscaler:Model"] ?? UpscaleModel;
+        if (int.TryParse(config["Upscaler:Scale"], out var scale))
+        {
+            UpscaleScale = scale;
+        }
+
+        if (bool.TryParse(config["Pdf:AutoFillEmptySlots"], out var autoFill))
+        {
+            AutoFillEmptySlots = autoFill;
+        }
+
+        if (bool.TryParse(config["Pdf:AutoUseSuggestedName"], out var autoName))
+        {
+            AutoUseSuggestedName = autoName;
+        }
+    }
 }

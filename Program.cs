@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using ScryForge.Services.Intefaces;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 internal class Program
@@ -40,6 +41,14 @@ internal class Program
 
         builder.Logging.AddFilter("System.Net.Http.HttpClient", LogLevel.Warning);
         builder.Logging.AddFilter("Microsoft.Hosting.Lifetime", LogLevel.None);
+
+        var configuration = new ConfigurationBuilder()
+            .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
+            .AddJsonFile("appsettings.json", optional: true)
+            .Build();
+
+        AppConfig.Initialize(configuration);
+
 
         await builder.Build().RunAsync();
     }

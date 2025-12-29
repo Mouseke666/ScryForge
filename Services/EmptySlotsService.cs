@@ -54,6 +54,12 @@ namespace ScryForge.Services
                 _logger.LogInformation("There are {EmptySlots} empty slot(s) on the last page of double-faced cards.", emptyFlips);
             }
 
+            if (AppConfig.AutoFillEmptySlots)
+            {
+                _logger.LogInformation("Empty slots detected, auto-fill is enabled. Continuing without prompt.");
+                return new EmptySlotsResult(false, emptyDefault, emptyFlips, true);
+            }
+
             _logger.LogInformation("Do you want to fill these empty slots? Press Enter to continue, or type 'Q' to quit.");
 
             Console.Write("> ");

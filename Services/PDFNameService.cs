@@ -18,8 +18,6 @@ namespace ScryForge.Services
         public async Task<PdfNameResult> DeterminePdfNameAsync(string cardsFilePath)
         {
             string suggestedName = await _parser.GetSuggestedPdfNameAsync(cardsFilePath);
-
-            // Sanitize suggestie (verwijder ongeldige filename karakters)
             suggestedName = SanitizeFileName(suggestedName);
 
             if (string.IsNullOrWhiteSpace(suggestedName))
@@ -29,6 +27,13 @@ namespace ScryForge.Services
             }
 
             string timestamp = DateTime.Now.ToString("dd-MM-yyyy_HH-mm-ss");
+
+            if (AppConfig.AutoUseSuggestedName)
+            {
+                _logger.LogInformation("AutoUseSuggestedName is enabled. Using suggested name without prompt.");
+                string fullNameAuto = $"{suggestedName}_{timestamp}";
+                return new PdfNameResult(fullNameAuto, suggestedName, timestamp);
+            }
 
             _logger.LogInformation("Suggested PDF name: {Name}", suggestedName);
             _logger.LogInformation("Enter PDF name (press Enter to accept suggested name):");
