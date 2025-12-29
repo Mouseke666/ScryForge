@@ -1,8 +1,8 @@
 @echo off
 setlocal enabledelayedexpansion
 
-:: Haal de laatste tag op
-for /f "delims=" %%a in ('git tag --sort=-creatordate') do (
+:: Haal de laatste tag op op basis van semantische versie
+for /f "delims=" %%a in ('git tag --sort=-v:refname') do (
     set last_tag=%%a
     goto :found
 )
@@ -24,7 +24,7 @@ for /f "tokens=1-3 delims=." %%a in ("%version_number%") do (
     set patch=%%c
 )
 
-:: Controleer of patch leeg is
+:: Als patch leeg is, zet op 0
 if "!patch!"=="" set patch=0
 
 :: Verhoog patch
