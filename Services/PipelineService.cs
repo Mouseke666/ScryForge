@@ -184,7 +184,7 @@ public class PipelineService : BackgroundService
         LogStep(ref step, totalSteps, "Opening output folder");
         try
         {
-            _openfolder.OpenFolder(AppConfig.BasePath);
+            _openfolder.OpenFolder(AppConfig.OutputFolder);
         }
         catch (Exception ex)
         {

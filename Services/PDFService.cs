@@ -108,9 +108,13 @@ namespace ScryForge.Services
             try
             {
                 await RunAsync("default", baseName, true);
+
+                string outputPath = Path.Combine(AppConfig.BasePath, "Output");
+                Directory.CreateDirectory(outputPath); // Zorg dat de folder bestaat
+
                 _copy.MoveFile(
                     Path.Combine(AppConfig.PdfPath, $"{baseName}.pdf"),
-                    Path.Combine(AppConfig.BasePath, $"{baseName}.pdf"));
+                    Path.Combine(outputPath, $"{baseName}.pdf"));
             }
             catch (Exception ex)
             {
@@ -136,9 +140,12 @@ namespace ScryForge.Services
 
                 await RunAsync("flips", flipsName, true);
 
+                string outputPath = Path.Combine(AppConfig.BasePath, "Output");
+                Directory.CreateDirectory(outputPath); // Zorg dat de folder bestaat
+
                 _copy.MoveFile(
                     Path.Combine(AppConfig.PdfPath, $"{flipsName}.pdf"),
-                    Path.Combine(AppConfig.BasePath, $"{flipsName}.pdf"));
+                    Path.Combine(outputPath, $"{flipsName}.pdf"));
 
                 await _cleanup.CleanDirectoryAsync(AppConfig.UpscaledFolder);
             }
@@ -147,7 +154,6 @@ namespace ScryForge.Services
                 _logger.LogError(ex, "Generating flips PDF failed");
             }
         }
-
 
         public async Task<int> GetMaxCardsPerPage(string jsonFilePath)
         {
