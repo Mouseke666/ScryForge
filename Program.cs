@@ -16,7 +16,7 @@ internal class Program
         builder.Services.AddSingleton<IDownloaderService, DownloaderService>();
         builder.Services.AddSingleton<UpscalerService>();
         builder.Services.AddSingleton<ICopyService, CopyService>();
-        builder.Services.AddSingleton<FlipService>();
+        builder.Services.AddSingleton<IFlipService, FlipService>();
         builder.Services.AddSingleton<IPDFService, PDFService>();
         builder.Services.AddSingleton<PDFOpenService>();
         builder.Services.AddSingleton<IEmptySlotsService, EmptySlotsService>();

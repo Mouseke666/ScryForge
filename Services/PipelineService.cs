@@ -14,7 +14,7 @@ public class PipelineService : BackgroundService
     private readonly IDownloaderService _downloader;
     private readonly UpscalerService _upscaler;
     private readonly ICopyService _copy;
-    private readonly FlipService _flips;
+    private readonly IFlipService _flips;
     private readonly IPDFService _pdf;
     private readonly PDFOpenService _openPdf;
     private readonly IEmptySlotsService _emptySlots;
@@ -28,7 +28,7 @@ public class PipelineService : BackgroundService
         IDownloaderService downloader,
         UpscalerService upscaler,
         ICopyService copy,
-        FlipService flips,
+        IFlipService flips,
         IPDFService pdf,
         PDFOpenService openPdf,
         IEmptySlotsService emptySlots,

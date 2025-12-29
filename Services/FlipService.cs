@@ -1,9 +1,10 @@
 using ScryForge.Models;
 using Microsoft.Extensions.Logging;
+using ScryForge.Services.Intefaces;
 
 namespace ScryForge.Services
 {
-    public class FlipService
+    public class FlipService : IFlipService
     {
         private readonly ILogger<FlipService> _logger;
 
