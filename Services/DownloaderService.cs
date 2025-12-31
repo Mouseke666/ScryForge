@@ -52,13 +52,13 @@ public class DownloaderService : IDownloaderService
             if (string.IsNullOrWhiteSpace(line))
                 continue;
 
-            if (!TryParseLine(line, out var name, out var set, out var cn))
+            if (!TryParseLine(line, out var quantity, out var name, out var set, out var cn))
             {
                 _logger.LogWarning("Could not parse line: {Line}", rawLine);
                 continue;
             }
 
-            fetchTasks.Add(FetchAndAddCardAsync(name, set, cn, result, ct));
+            fetchTasks.Add(FetchAndAddCardAsync(quantity, name, set, cn, result, ct));
         }
 
         await Task.WhenAll(fetchTasks);
@@ -99,6 +99,7 @@ public class DownloaderService : IDownloaderService
     }
 
     private async Task FetchAndAddCardAsync(
+        int quantity,
         string name,
         string? set,
         string? cn,
@@ -113,6 +114,7 @@ public class DownloaderService : IDownloaderService
         var card = ParseCard(json);
         if (card != null)
         {
+            card.Quantity = quantity;
             result.Add(card);
         }
     }
@@ -331,35 +333,44 @@ public class DownloaderService : IDownloaderService
         ?? throw new InvalidOperationException("No valid Scryfall image URL found");
 
     private static bool TryParseLine(
-        string line,
-        out string name,
-        out string? setCode,
-        out string? collectorNumber)
+    string line,
+    out int quantity,
+    out string name,
+    out string? setCode,
+    out string? collectorNumber)
     {
+        quantity = 1; // default
         name = "";
         setCode = null;
         collectorNumber = null;
 
+        // verwijder trailing "*F*" zoals je deed
         line = Regex.Replace(line, @"\*F\*\s*$", "", RegexOptions.IgnoreCase).Trim();
 
+        // Regex: optioneel aantal aan het begin, gevolgd door naam, set (tussen haakjes), collector number
         var match = Regex.Match(
             line,
-            @"^\s*(?:\d+\s+)?(.+?)\s*(?:\(\s*([A-Z0-9]{2,5})\s*\))?\s*([0-9A-Z\-]+)?\s*$",
+            @"^\s*(?:(\d+)\s+)?(.+?)\s*(?:\(\s*([A-Z0-9]{2,5})\s*\))?\s*([0-9A-Z\-]+)?\s*$",
             RegexOptions.IgnoreCase);
 
         if (!match.Success)
             return false;
 
-        name = match.Groups[1].Value.Trim();
+        // Quantity als het bestaat, anders default 1
+        if (match.Groups[1].Success)
+            quantity = int.Parse(match.Groups[1].Value);
 
-        if (match.Groups[2].Success)
-            setCode = match.Groups[2].Value.Trim().ToUpperInvariant();
+        name = match.Groups[2].Value.Trim();
 
         if (match.Groups[3].Success)
-            collectorNumber = match.Groups[3].Value.Trim().ToUpperInvariant();
+            setCode = match.Groups[3].Value.Trim().ToUpperInvariant();
+
+        if (match.Groups[4].Success)
+            collectorNumber = match.Groups[4].Value.Trim().ToUpperInvariant();
 
         return true;
     }
+
 
     private static string SanitizeFileName(string name) =>
         string.Join("_", name.Split(Path.GetInvalidFileNameChars()));

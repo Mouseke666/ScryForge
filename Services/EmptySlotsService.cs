@@ -31,8 +31,9 @@ namespace ScryForge.Services
             if (maxDefault <= 0) maxDefault = 9;
             if (maxFlips <= 0) maxFlips = 8;
 
-            int defaultCount = cards.Count(c => !c.IsDoubleFaced);
-            int flipsCount = cards.Count(c => c.IsDoubleFaced);
+            int defaultCount = cards.Where(c => !c.IsDoubleFaced).Sum(c => c.Quantity);
+
+            int flipsCount = cards.Where(c => c.IsDoubleFaced).Sum(c => c.Quantity);
 
             int emptyDefault = CalculateEmptySlots(defaultCount, maxDefault);
             int emptyFlips = CalculateEmptySlots(flipsCount, maxFlips);
