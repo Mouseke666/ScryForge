@@ -3,7 +3,7 @@ name: Build and Release ScryForge
 on:
   push:
     tags:
-      - 'v*.*.*'  # Trigger only on version tags like v1.0.34
+      - 'v*.*.*'
 
 jobs:
   build:
@@ -13,7 +13,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Zorgt dat alle commits en tags beschikbaar zijn
+          fetch-depth: 0
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -31,56 +31,63 @@ jobs:
         shell: pwsh
         run: |
           $tag = "${{ github.ref_name }}"
-          $version = $tag.Substring(1)  # Remove the 'v' prefix
+          $version = $tag.Substring(1)
           echo "VERSION=$version" >> $env:GITHUB_OUTPUT
           Write-Host "Build version set to: $version"
 
-      - name: Get previous tag
+      - name: Resolve previous tag (semantic version order)
         id: prev_tag
         shell: pwsh
         run: |
           git fetch --tags
 
           $currentTag = "${{ github.ref_name }}"
-          # Pak alleen tags die semver-formaat hebben
-          $tags = git tag --list 'v*.*.*' --sort=-v:refname
-          # Vind eerste tag die niet de huidige is
+          $tags = git tag --list "v*" --sort=-v:refname
+
+          Write-Host "All tags sorted by version:"
+          $tags | ForEach-Object { Write-Host " - $_" }
+
           $prevTag = $tags | Where-Object { $_ -ne $currentTag } | Select-Object -First 1
 
           if ($prevTag) {
-              echo "PREV_TAG=$prevTag" >> $env:GITHUB_OUTPUT
-              Write-Host "Previous tag: $prevTag"
+            echo "PREV_TAG=$prevTag" >> $env:GITHUB_OUTPUT
+            Write-Host "Previous tag resolved to: $prevTag"
           } else {
-              echo "PREV_TAG=" >> $env:GITHUB_OUTPUT
-              Write-Host "No previous tag found."
+            echo "PREV_TAG=" >> $env:GITHUB_OUTPUT
+            Write-Host "No previous tag found"
           }
 
-      - name: Get commit messages since previous tag
+      - name: Collect commits since previous tag
         id: commits
         shell: pwsh
         run: |
           $prevTag = "${{ steps.prev_tag.outputs.PREV_TAG }}"
-          $currentTag = "${{ github.ref_name }}"
-          
+
           if ($prevTag) {
-              # Commits sinds vorige release-tag
-              $commits = git log $prevTag..$currentTag --pretty=format:"- %s (%an)"
-              $commitsText = if ($commits) { $commits } else { "No commits since previous release." }
+            Write-Host "Collecting commits from $prevTag to HEAD"
+            $commits = git log "$prevTag..HEAD" --pretty=format:"- %s (%an)"
           } else {
-              # Geen vorige release: laat alle commits zien
-              $commits = git log $currentTag --pretty=format:"- %s (%an)"
-              $commitsText = if ($commits) { $commits } else { "No commits found." }
+            Write-Host "No previous tag; collecting full history"
+            $commits = git log HEAD --pretty=format:"- %s (%an)"
           }
 
-          echo "COMMITS=$commitsText" >> $env:GITHUB_OUTPUT
-          Write-Host "Commits since previous release:`n$commitsText"
+          if (-not $commits) {
+            $commits = "No commits found."
+          }
+
+          Write-Host "Commits found:"
+          Write-Host $commits
+
+          echo "COMMITS<<EOF" >> $env:GITHUB_OUTPUT
+          echo "$commits" >> $env:GITHUB_OUTPUT
+          echo "EOF" >> $env:GITHUB_OUTPUT
 
       - name: Publish project
         shell: pwsh
         env:
           APP_VERSION: ${{ steps.version.outputs.VERSION }}
         run: |
-          Write-Host "Publishing with version: $env:APP_VERSION (clean version, no commit hash)"
+          Write-Host "Publishing version $env:APP_VERSION"
           dotnet publish ScryForge.csproj `
             --configuration Release `
             -r win-x64 `
@@ -113,6 +120,8 @@ jobs:
             Automatic release of ScryForge
 
             **Version:** ${{ steps.version.outputs.VERSION }}
+
+            **Previous tag:** ${{ steps.prev_tag.outputs.PREV_TAG }}
 
             **Changes since last release:**
             ${{ steps.commits.outputs.COMMITS }}
