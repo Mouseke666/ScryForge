@@ -39,13 +39,14 @@ jobs:
         id: prev_tag
         shell: pwsh
         run: |
-          # Zorg dat alle tags lokaal beschikbaar zijn
           git fetch --tags
-          $tags = git tag --sort=-creatordate
-          $currentTag = "${{ github.ref_name }}"
 
-          # Vind eerste tag ouder dan de huidige
+          $currentTag = "${{ github.ref_name }}"
+          # Pak alleen tags die semver-formaat hebben
+          $tags = git tag --list 'v*.*.*' --sort=-v:refname
+          # Vind eerste tag die niet de huidige is
           $prevTag = $tags | Where-Object { $_ -ne $currentTag } | Select-Object -First 1
+
           if ($prevTag) {
               echo "PREV_TAG=$prevTag" >> $env:GITHUB_OUTPUT
               Write-Host "Previous tag: $prevTag"
@@ -59,14 +60,18 @@ jobs:
         shell: pwsh
         run: |
           $prevTag = "${{ steps.prev_tag.outputs.PREV_TAG }}"
+          $currentTag = "${{ github.ref_name }}"
+          
           if ($prevTag) {
-              $commits = git log $prevTag..HEAD --pretty=format:"- %s (%an)"
+              # Commits sinds vorige release-tag
+              $commits = git log $prevTag..$currentTag --pretty=format:"- %s (%an)"
               $commitsText = if ($commits) { $commits } else { "No commits since previous release." }
           } else {
-              # Geen vorige tag: laat alle commits zien
-              $commits = git log HEAD --pretty=format:"- %s (%an)"
+              # Geen vorige release: laat alle commits zien
+              $commits = git log $currentTag --pretty=format:"- %s (%an)"
               $commitsText = if ($commits) { $commits } else { "No commits found." }
           }
+
           echo "COMMITS=$commitsText" >> $env:GITHUB_OUTPUT
           Write-Host "Commits since previous release:`n$commitsText"
 
@@ -108,7 +113,7 @@ jobs:
             Automatic release of ScryForge
 
             **Version:** ${{ steps.version.outputs.VERSION }}
-            
+
             **Changes since last release:**
             ${{ steps.commits.outputs.COMMITS }}
           files: "ScryForge_${{ github.ref_name }}.zip"
