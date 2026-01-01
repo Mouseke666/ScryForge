@@ -44,26 +44,31 @@ jobs:
 
           echo "PREV_TAG=$prev" >> $env:GITHUB_OUTPUT
 
-      - name: Collect commits (filtered & formatted)
+      - name: Collect commits (feat, fix, perf)
         id: commits
         shell: pwsh
         run: |
           $prevTag = "${{ steps.prev_tag.outputs.PREV_TAG }}"
 
           if ($prevTag) {
-            $rawCommits = git log "$prevTag..HEAD" --pretty=format:"%s (%an)"
+            $rawCommits = git log "$prevTag..HEAD" --pretty=format:"%s"
           } else {
-            $rawCommits = git log HEAD --pretty=format:"%s (%an)"
+            $rawCommits = git log HEAD --pretty=format:"%s"
           }
 
+          # Filter alleen de user-facing commit types: feat, fix, perf
+          # Sluit bump commits uit
           $filtered = $rawCommits |
-            Where-Object { $_ -notmatch '^chore:\s*bump' } |
+            ForEach-Object { $_.Trim() } |
+            Where-Object { ($_ -match '^(feat|fix|perf):') -and ($_ -notmatch 'bump version') } |
             ForEach-Object { "- $_" }
 
+          # Als er geen commits overblijven
           if (-not $filtered) {
             $filtered = "- No user-facing changes."
           }
 
+          # Output als multiline voor GitHub Actions
           echo "COMMITS<<EOF" >> $env:GITHUB_OUTPUT
           $filtered | Out-String | ForEach-Object { $_.TrimEnd() } >> $env:GITHUB_OUTPUT
           echo "EOF" >> $env:GITHUB_OUTPUT
