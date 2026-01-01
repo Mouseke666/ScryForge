@@ -3,7 +3,7 @@ name: Build and Release ScryForge
 on:
   push:
     tags:
-      - 'v*.*.*'  # Trigger only on version tags like v1.0.30
+      - 'v*.*.*'  # Trigger only on version tags like v1.0.34
 
 jobs:
   build:
@@ -13,7 +13,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0  # Zorgt dat alle commits en tags beschikbaar zijn
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -39,11 +39,17 @@ jobs:
         id: prev_tag
         shell: pwsh
         run: |
-          try {
-              $prevTag = git describe --tags --abbrev=0 ${{ github.ref }}^
+          # Zorg dat alle tags lokaal beschikbaar zijn
+          git fetch --tags
+          $tags = git tag --sort=-creatordate
+          $currentTag = "${{ github.ref_name }}"
+
+          # Vind eerste tag ouder dan de huidige
+          $prevTag = $tags | Where-Object { $_ -ne $currentTag } | Select-Object -First 1
+          if ($prevTag) {
               echo "PREV_TAG=$prevTag" >> $env:GITHUB_OUTPUT
               Write-Host "Previous tag: $prevTag"
-          } catch {
+          } else {
               echo "PREV_TAG=" >> $env:GITHUB_OUTPUT
               Write-Host "No previous tag found."
           }
@@ -57,7 +63,9 @@ jobs:
               $commits = git log $prevTag..HEAD --pretty=format:"- %s (%an)"
               $commitsText = if ($commits) { $commits } else { "No commits since previous release." }
           } else {
-              $commitsText = "No previous release found."
+              # Geen vorige tag: laat alle commits zien
+              $commits = git log HEAD --pretty=format:"- %s (%an)"
+              $commitsText = if ($commits) { $commits } else { "No commits found." }
           }
           echo "COMMITS=$commitsText" >> $env:GITHUB_OUTPUT
           Write-Host "Commits since previous release:`n$commitsText"
@@ -99,7 +107,9 @@ jobs:
           body: |
             Automatic release of ScryForge
 
-            **Version:** ${{ steps.version.outputs.VERSION }}            
+            **Version:** ${{ steps.version.outputs.VERSION }}
+
+            **Built on:** ${{ format('{0:dd-MM-yyyy HH:mm}', github.event.head_commit.timestamp) }}
 
             **Changes since last release:**
             ${{ steps.commits.outputs.COMMITS }}
