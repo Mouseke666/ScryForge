@@ -39,4 +39,7 @@
   <Target Name="EnsureLogFolder" BeforeTargets="Build;Publish">
     <MakeDir Directories="$(OutputPath)Log" />
   </Target>
+  <PropertyGroup xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <Version>1.0.26</Version>
+  </PropertyGroup>
 </Project>
