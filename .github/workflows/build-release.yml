@@ -72,9 +72,7 @@ jobs:
           body: |
             Automatic release of ScryForge
 
-            **Version:** ${{ steps.version.outputs.VERSION }}
-
-            **Built on:** ${{ format('{0:dd-MM-yyyy HH:mm}', github.event.head_commit.timestamp) }}
+            **Version:** ${{ steps.version.outputs.VERSION }}            
           files: "ScryForge_${{ github.ref_name }}.zip"
           draft: false
           prerelease: false
