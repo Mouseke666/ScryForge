@@ -74,6 +74,8 @@ public class PipelineService : BackgroundService
 
     private async Task RunPipelineAsync(CancellationToken ct)
     {
+        _logger.LogInformation(AppVersion.GetWithPrefix());
+
         int step = 1;
         int totalSteps = 11;
 

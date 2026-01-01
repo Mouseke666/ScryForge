@@ -3,59 +3,75 @@ name: Build and Release ScryForge
 on:
   push:
     tags:
-      - 'v*.*.*'  # Trigger on version tags
+      - 'v*.*.*'  # Trigger op tags zoals v1.0.23
 
 jobs:
   build:
     runs-on: windows-latest
 
     steps:
-      # Checkout repository
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Veilig voor toekomstige uitbreidingen
 
-      # Setup .NET SDK
       - name: Setup .NET
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '9.0.x'
 
-      # Restore dependencies
       - name: Restore dependencies
         run: dotnet restore
 
-      # Build in Release mode (normal build, no single-file)
       - name: Build project
         run: dotnet build --configuration Release --no-restore
 
-      # PUBLISH with all bundling settings (only here!)
-      - name: Publish project
-        run: dotnet publish ScryForge.csproj `
-          --configuration Release `
-          -r win-x64 `
-          --self-contained true `
-          /p:PublishSingleFile=true `
-          /p:PublishTrimmed=true `
-          /p:EnableCompressionInSingleFile=true `
-          /p:IncludeAllContentForSelfExtract=false `
-          /p:DebugType=None `
-          --output ./publish
+      - name: Set version from tag
+        id: version
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $version = $tag.Substring(1)  # Verwijder de 'v'
+          echo "VERSION=$version" >> $env:GITHUB_OUTPUT
+          echo "Versie ingesteld op: $version"
 
-      # Compress output
+      - name: Publish project
+        run: |
+          dotnet publish ScryForge.csproj `
+            --configuration Release `
+            -r win-x64 `
+            --self-contained true `
+            /p:PublishSingleFile=true `
+            /p:PublishTrimmed=true `
+            /p:EnableCompressionInSingleFile=true `
+            /p:IncludeAllContentForSelfExtract=false `
+            /p:DebugType=None `
+            /p:Version=${{ steps.version.outputs.VERSION }} `
+            /p:AssemblyVersion=${{ steps.version.outputs.VERSION }}.0 `
+            /p:FileVersion=${{ steps.version.outputs.VERSION }}.0 `
+            /p:InformationalVersion=${{ steps.version.outputs.VERSION }} `
+            --output ./publish
+
       - name: Compress build output
         shell: pwsh
         run: |
           $zipName = "ScryForge_${{ github.ref_name }}.zip"
-          Compress-Archive -Path "./publish/*" -DestinationPath $zipName
-          Write-Output "ZIP created: $zipName"
+          Compress-Archive -Path "./publish/*" -DestinationPath $zipName -Force
+          Write-Output "ZIP aangemaakt: $zipName"
 
-      # Release artifact
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
           name: ScryForge ${{ github.ref_name }}
-          body: "Automatic release of ScryForge"
+          body: |
+            Automatische release van ScryForge
+            
+            **Versie:** ${{ steps.version.outputs.VERSION }}
+            
+            Gebouwd op: ${{ github.event.head_commit.timestamp }}
           files: "ScryForge_${{ github.ref_name }}.zip"
+          draft: false
+          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
