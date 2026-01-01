@@ -35,7 +35,7 @@ if "!patch!"=="" set "patch=0"
 :: Verhoog patch
 set /a patch+=1
 
-:: Nieuwe versies samenstellen
+:: Nieuwe versies
 set "new_tag=v%major%.%minor%.%patch%"
 set "new_version=%major%.%minor%.%patch%"
 
@@ -44,57 +44,74 @@ echo Nieuwe release versie: %new_tag%
 echo (dit wordt ook lokaal in de app getoond)
 
 :: ========================================
-:: 1. Update de <Version> in ScryForge.csproj
+:: 1. Update de <Version> in ScryForge.csproj (super robuust)
 :: ========================================
 
 set "csproj=ScryForge.csproj"
 
-:: Controleer of het bestand bestaat
 if not exist "%csproj%" (
-    echo FOUT: %csproj% niet gevonden!
+    echo FOUT: %csproj% niet gevonden in de huidige map!
     pause
     exit /b 1
 )
 
-:: Gebruik PowerShell om de <Version> tag te vervangen of toe te voegen
-powershell -Command ^
-"$xml = [xml](Get-Content '%csproj%'); ^
-$ns = New-Object System.Xml.XmlNamespaceManager($xml.NameTable); ^
-$ns.AddNamespace('ns', 'http://schemas.microsoft.com/developer/msbuild/2003'); ^
-$node = $xml.SelectSingleNode('//ns:Version', $ns); ^
-if ($node) { $node.InnerText = '%new_version%' } ^
-else { ^
-  $pg = $xml.SelectSingleNode('//ns:PropertyGroup[not(*)]'); ^
-  if (-not $pg) { $pg = $xml.Project.PropertyGroup[0] } ^
-  $ver = $xml.CreateElement('Version'); ^
-  $ver.InnerText = '%new_version%'; ^
-  $pg.AppendChild($ver) | Out-Null ^
-}; ^
-$xml.Save('%csproj%'); ^
-Write-Host 'Version in %csproj% bijgewerkt naar %new_version%'"
+echo Updaten van versie in %csproj% naar %new_version% ...
 
+powershell -Command ^
+"$xml = [xml](Get-Content '%csproj%' -Encoding UTF8); ^
+$ns = New-Object Xml.XmlNamespaceManager $xml.NameTable; ^
+$ns.AddNamespace('msb', 'http://schemas.microsoft.com/developer/msbuild/2003'); ^
+$versionNode = $xml.SelectSingleNode('//msb:Version', $ns); ^
+if ($versionNode) { ^
+    $versionNode.InnerText = '%new_version%'; ^
+    Write-Host 'Version bijgewerkt naar %new_version%' ^
+} else { ^
+    $pg = $xml.SelectSingleNode('//msb:PropertyGroup[not(msb:Version)]', $ns); ^
+    if (-not $pg) { ^
+        $pg = $xml.CreateElement('PropertyGroup', 'http://schemas.microsoft.com/developer/msbuild/2003'); ^
+        $xml.Project.AppendChild($pg) ^
+    }; ^
+    $newNode = $xml.CreateElement('Version', 'http://schemas.microsoft.com/developer/msbuild/2003'); ^
+    $newNode.InnerText = '%new_version%'; ^
+    $pg.AppendChild($newNode); ^
+    Write-Host 'Version toegevoegd: %new_version%' ^
+}; ^
+$xml.Save('%csproj%')"
+
+if errorlevel 1 (
+    echo FOUT: Kon de versie niet bijwerken in %csproj%!
+    pause
+    exit /b 1
+)
+
+echo Versie succesvol bijgewerkt in %csproj%
 echo.
 
 :: ========================================
-:: 2. Commit de wijziging in csproj (optioneel maar aanbevolen)
+:: 2. Commit de wijziging
 :: ========================================
 
 git add ScryForge.csproj
-git commit -m "chore: update project version to %new_version%" --no-verify
+git commit -m "chore: bump version to %new_version%" --no-verify || echo Geen wijziging in csproj (mogelijk al up-to-date)
 
 :: ========================================
-:: 3. Maak tag en push alles
+:: 3. Tag aanmaken en pushen
 :: ========================================
 
 git tag -a %new_tag% -m "Versie %new_tag% release"
+
+echo Push tag %new_tag%...
 git push origin %new_tag%
-git push origin main  :: of master, afhankelijk van je branch
+
+echo Push main branch...
+git push origin main
+:: Als je branch 'master' heet, vervang 'main' door 'master'
 
 echo.
 echo ========================================
-echo Klaar!
-echo - Nieuwe tag: %new_tag%
-echo - Lokale versie: %new_version%
-echo - GitHub Actions is gestart voor de build
+echo KLAAR!
+echo Nieuwe versie: %new_tag%
+echo Lokale app toont nu: %new_version%
+echo GitHub Actions bouwt de release...
 echo ========================================
 pause
