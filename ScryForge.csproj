@@ -1,17 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-  <OutputType>Exe</OutputType>
-  <TargetFramework>net9.0</TargetFramework>
-  <ImplicitUsings>enable</ImplicitUsings>
-  <Nullable>enable</Nullable>
-  <ApplicationIcon>icon.ico</ApplicationIcon>
-
-  <Version>1.0.27</Version>
-  <InformationalVersion>$(Version)</InformationalVersion>
-
-  <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
-  <Deterministic>true</Deterministic>
-</PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <ApplicationIcon>icon.ico</ApplicationIcon>
+    <InformationalVersion>$(Version)</InformationalVersion>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <Deterministic>true</Deterministic>
+    <Version>1.0.30</Version>
+  </PropertyGroup>
   <ItemGroup>
     <None Update="PDF\**\*">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
@@ -35,6 +33,5 @@
     <MakeDir Directories="$(OutputPath)Log" />
   </Target>
   <PropertyGroup>
-    <Version>1.0.29</Version>
   </PropertyGroup>
 </Project>
