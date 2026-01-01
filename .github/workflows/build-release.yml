@@ -56,22 +56,20 @@ jobs:
             $rawCommits = git log HEAD --pretty=format:"%s"
           }
 
-          # Filter alleen de gewenste commit types en pas hoofdletter aan
           $filtered = $rawCommits |
             ForEach-Object {
-                $_ = $_.Trim()
-                if ($_ -match '^(feat|fix|perf):\s*(.*)') {
-                    $type = $matches[1].Substring(0,1).ToUpper() + $matches[1].Substring(1)
-                    $msg = $matches[2]
-                    "- $type: $msg"
-                }
+              $_ = $_.Trim()
+              if ($_ -match '^(feat|fix|perf):\s*(.*)') {
+                $type = $matches[1].Substring(0,1).ToUpper() + $matches[1].Substring(1)
+                $msg = $matches[2]
+                "- $($type): $msg"
+              }
             }
 
           if (-not $filtered) {
             $filtered = "- No user-facing changes."
           }
 
-          # Output als multi-line voor GitHub Actions
           echo "COMMITS<<EOF" >> $env:GITHUB_OUTPUT
           $filtered | Out-String | ForEach-Object { $_.TrimEnd() } >> $env:GITHUB_OUTPUT
           echo "EOF" >> $env:GITHUB_OUTPUT
