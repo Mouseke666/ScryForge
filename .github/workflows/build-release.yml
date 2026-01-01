@@ -3,7 +3,7 @@ name: Build and Release ScryForge
 on:
   push:
     tags:
-      - 'v*.*.*'  # Alleen triggeren op tags zoals v1.0.24
+      - 'v*.*.*'  # Trigger only on version tags like v1.0.30
 
 jobs:
   build:
@@ -26,21 +26,21 @@ jobs:
       - name: Build project
         run: dotnet build --configuration Release --no-restore
 
-      - name: Set version from tag
+      - name: Extract version from tag
         id: version
         shell: pwsh
         run: |
           $tag = "${{ github.ref_name }}"
-          $version = $tag.Substring(1)  # Verwijder de 'v'
+          $version = $tag.Substring(1)  # Remove the 'v' prefix
           echo "VERSION=$version" >> $env:GITHUB_OUTPUT
-          Write-Host "Versie voor build ingesteld op: $version"
+          Write-Host "Build version set to: $version"
 
       - name: Publish project
         shell: pwsh
         env:
           APP_VERSION: ${{ steps.version.outputs.VERSION }}
         run: |
-          Write-Host "Publiceren met versie: $env:APP_VERSION (schone versie, geen commit-hash)"
+          Write-Host "Publishing with version: $env:APP_VERSION (clean version, no commit hash)"
           dotnet publish ScryForge.csproj `
             --configuration Release `
             -r win-x64 `
@@ -62,7 +62,7 @@ jobs:
         run: |
           $zipName = "ScryForge_${{ github.ref_name }}.zip"
           Compress-Archive -Path "./publish/*" -DestinationPath $zipName -Force
-          Write-Host "ZIP aangemaakt: $zipName"
+          Write-Host "ZIP created: $zipName"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -70,11 +70,11 @@ jobs:
           tag_name: ${{ github.ref_name }}
           name: ScryForge ${{ github.ref_name }}
           body: |
-            Automatische release van ScryForge
+            Automatic release of ScryForge
 
-            **Versie:** ${{ steps.version.outputs.VERSION }}
+            **Version:** ${{ steps.version.outputs.VERSION }}
 
-            Gebouwd op: ${{ github.event.head_commit.timestamp }}
+            **Built on:** ${{ format('{0:dd-MM-yyyy HH:mm}', github.event.head_commit.timestamp) }}
           files: "ScryForge_${{ github.ref_name }}.zip"
           draft: false
           prerelease: false
