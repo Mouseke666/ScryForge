@@ -56,19 +56,22 @@ jobs:
             $rawCommits = git log HEAD --pretty=format:"%s"
           }
 
-          # Filter alleen de user-facing commit types: feat, fix, perf
-          # Sluit bump commits uit
+          # Filter alleen de gewenste commit types en pas hoofdletter aan
           $filtered = $rawCommits |
-            ForEach-Object { $_.Trim() } |
-            Where-Object { ($_ -match '^(feat|fix|perf):') -and ($_ -notmatch 'bump version') } |
-            ForEach-Object { "- $_" }
+            ForEach-Object {
+                $_ = $_.Trim()
+                if ($_ -match '^(feat|fix|perf):\s*(.*)') {
+                    $type = $matches[1].Substring(0,1).ToUpper() + $matches[1].Substring(1)
+                    $msg = $matches[2]
+                    "- $type: $msg"
+                }
+            }
 
-          # Als er geen commits overblijven
           if (-not $filtered) {
             $filtered = "- No user-facing changes."
           }
 
-          # Output als multiline voor GitHub Actions
+          # Output als multi-line voor GitHub Actions
           echo "COMMITS<<EOF" >> $env:GITHUB_OUTPUT
           $filtered | Out-String | ForEach-Object { $_.TrimEnd() } >> $env:GITHUB_OUTPUT
           echo "EOF" >> $env:GITHUB_OUTPUT
@@ -106,7 +109,7 @@ jobs:
           body: |
             Automatic release of ScryForge
 
-            **Version:** ${{ steps.version.outputs.VERSION }}            
+            **Version:** ${{ steps.version.outputs.VERSION }}
 
             **Changes since last release:**
             ${{ steps.commits.outputs.COMMITS }}
