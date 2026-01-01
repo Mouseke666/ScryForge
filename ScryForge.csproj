@@ -8,7 +8,7 @@
     <InformationalVersion>$(Version)</InformationalVersion>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
     <Deterministic>true</Deterministic>
-    <Version>1.0.41</Version>
+    <Version>1.0.42</Version>
   </PropertyGroup>
   <ItemGroup>
     <None Update="PDF\**\*">
