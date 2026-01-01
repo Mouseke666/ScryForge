@@ -108,9 +108,7 @@ jobs:
             Automatic release of ScryForge
 
             **Version:** ${{ steps.version.outputs.VERSION }}
-
-            **Built on:** ${{ format('{0:dd-MM-yyyy HH:mm}', github.event.head_commit.timestamp) }}
-
+            
             **Changes since last release:**
             ${{ steps.commits.outputs.COMMITS }}
           files: "ScryForge_${{ github.ref_name }}.zip"
