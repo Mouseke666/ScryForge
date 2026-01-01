@@ -106,8 +106,7 @@ jobs:
           body: |
             Automatic release of ScryForge
 
-            **Version:** ${{ steps.version.outputs.VERSION }}
-            **Previous tag:** ${{ steps.prev_tag.outputs.PREV_TAG }}
+            **Version:** ${{ steps.version.outputs.VERSION }}            
 
             **Changes since last release:**
             ${{ steps.commits.outputs.COMMITS }}
