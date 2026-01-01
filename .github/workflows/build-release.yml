@@ -3,7 +3,7 @@ name: Build and Release ScryForge
 on:
   push:
     tags:
-      - 'v*.*.*'  # Trigger op tags zoals v1.0.23
+      - 'v*.*.*'
 
 jobs:
   build:
@@ -13,7 +13,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Veilig voor toekomstige uitbreidingen
+          fetch-depth: 0
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -31,11 +31,14 @@ jobs:
         shell: pwsh
         run: |
           $tag = "${{ github.ref_name }}"
-          $version = $tag.Substring(1)  # Verwijder de 'v'
+          $version = $tag.Substring(1)
           echo "VERSION=$version" >> $env:GITHUB_OUTPUT
-          echo "Versie ingesteld op: $version"
+          Write-Host "Versie ingesteld op: $version"
 
       - name: Publish project
+        shell: pwsh
+        env:
+          APP_VERSION: ${{ steps.version.outputs.VERSION }}
         run: |
           dotnet publish ScryForge.csproj `
             --configuration Release `
@@ -46,10 +49,10 @@ jobs:
             /p:EnableCompressionInSingleFile=true `
             /p:IncludeAllContentForSelfExtract=false `
             /p:DebugType=None `
-            /p:Version=${{ steps.version.outputs.VERSION }} `
-            /p:AssemblyVersion=${{ steps.version.outputs.VERSION }}.0 `
-            /p:FileVersion=${{ steps.version.outputs.VERSION }}.0 `
-            /p:InformationalVersion=${{ steps.version.outputs.VERSION }} `
+            /p:Version=$env:APP_VERSION `
+            /p:AssemblyVersion=$env:APP_VERSION.0 `
+            /p:FileVersion=$env:APP_VERSION.0 `
+            /p:InformationalVersion=$env:APP_VERSION `
             --output ./publish
 
       - name: Compress build output
@@ -68,10 +71,6 @@ jobs:
             Automatische release van ScryForge
             
             **Versie:** ${{ steps.version.outputs.VERSION }}
-            
-            Gebouwd op: ${{ github.event.head_commit.timestamp }}
           files: "ScryForge_${{ github.ref_name }}.zip"
-          draft: false
-          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
