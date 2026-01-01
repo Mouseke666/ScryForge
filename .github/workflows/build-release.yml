@@ -3,7 +3,7 @@ name: Build and Release ScryForge
 on:
   push:
     tags:
-      - 'v*.*.*'
+      - 'v*.*.*'  # Alleen triggeren op tags zoals v1.0.24
 
 jobs:
   build:
@@ -31,15 +31,16 @@ jobs:
         shell: pwsh
         run: |
           $tag = "${{ github.ref_name }}"
-          $version = $tag.Substring(1)
+          $version = $tag.Substring(1)  # Verwijder de 'v'
           echo "VERSION=$version" >> $env:GITHUB_OUTPUT
-          Write-Host "Versie ingesteld op: $version"
+          Write-Host "Versie voor build ingesteld op: $version"
 
       - name: Publish project
         shell: pwsh
         env:
           APP_VERSION: ${{ steps.version.outputs.VERSION }}
         run: |
+          Write-Host "Publiceren met versie: $env:APP_VERSION (schone versie, geen commit-hash)"
           dotnet publish ScryForge.csproj `
             --configuration Release `
             -r win-x64 `
@@ -53,6 +54,7 @@ jobs:
             /p:AssemblyVersion=$env:APP_VERSION.0 `
             /p:FileVersion=$env:APP_VERSION.0 `
             /p:InformationalVersion=$env:APP_VERSION `
+            /p:IncludeSourceRevisionInInformationalVersion=false `
             --output ./publish
 
       - name: Compress build output
@@ -60,7 +62,7 @@ jobs:
         run: |
           $zipName = "ScryForge_${{ github.ref_name }}.zip"
           Compress-Archive -Path "./publish/*" -DestinationPath $zipName -Force
-          Write-Output "ZIP aangemaakt: $zipName"
+          Write-Host "ZIP aangemaakt: $zipName"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -69,8 +71,12 @@ jobs:
           name: ScryForge ${{ github.ref_name }}
           body: |
             Automatische release van ScryForge
-            
+
             **Versie:** ${{ steps.version.outputs.VERSION }}
+
+            Gebouwd op: ${{ github.event.head_commit.timestamp }}
           files: "ScryForge_${{ github.ref_name }}.zip"
+          draft: false
+          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
