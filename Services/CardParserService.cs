@@ -232,5 +232,41 @@ namespace ScryForge.Services
             return name;
         }
 
+        public async Task<List<CardInfo>> ParseCustomCardsAsync(IReadOnlyList<CustomCard> customCards)
+        {
+            var cards = new List<CardInfo>();
+            if (customCards == null || customCards.Count == 0)
+                return cards;
+
+            foreach (var custom in customCards)
+            {
+                if (string.IsNullOrWhiteSpace(custom.FrontLocation) || !File.Exists(custom.FrontLocation))
+                {
+                    _logger.LogWarning("Custom card file not found or empty: {File}", custom?.FrontLocation);
+                    continue;
+                }
+
+                var frontFileName = Path.GetFileName(custom.FrontLocation);
+                var backFileName = !string.IsNullOrWhiteSpace(custom.BackLocation) && File.Exists(custom.BackLocation)
+                    ? Path.GetFileName(custom.BackLocation)
+                    : string.Empty;
+
+                var cardInfo = new CardInfo
+                {
+                    Quantity = 1,
+                    Name = Path.GetFileNameWithoutExtension(frontFileName),
+                    SetCode = "CUSTOM",
+                    Number = "0",
+                    FrontFileName = frontFileName,
+                    BackFileName = backFileName
+                };
+
+                cards.Add(cardInfo);
+            }
+
+            _logger.LogInformation("Converted {Count} custom cards into CardInfo format.", cards.Count);
+            return cards;
+        }
+
     }
 }

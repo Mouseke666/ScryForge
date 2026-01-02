@@ -4,6 +4,6 @@ namespace ScryForge.Services.Intefaces
 {
     public interface IEmptySlotsService
     {
-        Task<EmptySlotsResult> AnalyzeAsync(IReadOnlyList<ScryfallCard> cards, CancellationToken ct);
+        Task<EmptySlotsResult> AnalyzeAsync(IReadOnlyList<ScryfallCard> cards, IReadOnlyList<CustomCard> customCards, CancellationToken ct);
     }
 }

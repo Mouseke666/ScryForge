@@ -15,9 +15,9 @@ namespace ScryForge.Services
             _logger = logger;
         }
 
-        public async Task<EmptySlotsResult> AnalyzeAsync(IReadOnlyList<ScryfallCard> cards, CancellationToken ct)
+        public async Task<EmptySlotsResult> AnalyzeAsync(IReadOnlyList<ScryfallCard> cards, IReadOnlyList<CustomCard> customCards, CancellationToken ct)
         {
-            if (cards == null || !cards.Any())
+            if ((cards == null || !cards.Any()) && (customCards == null || !customCards.Any()))
             {
                 return new EmptySlotsResult(false, 0, 0, false);
             }
@@ -31,9 +31,13 @@ namespace ScryForge.Services
             if (maxDefault <= 0) maxDefault = 9;
             if (maxFlips <= 0) maxFlips = 8;
 
-            int defaultCount = cards.Where(c => !c.IsDoubleFaced).Sum(c => c.Quantity);
+            // Tel standaard kaarten
+            int defaultCount = cards?.Where(c => !c.IsDoubleFaced).Sum(c => c.Quantity) ?? 0;
+            int flipsCount = cards?.Where(c => c.IsDoubleFaced).Sum(c => c.Quantity) ?? 0;
 
-            int flipsCount = cards.Where(c => c.IsDoubleFaced).Sum(c => c.Quantity);
+            // Tel custom kaarten (hier gaan we ze als default kaarten tellen)
+            int customCount = customCards?.Count ?? 0;
+            defaultCount += customCount;
 
             int emptyDefault = CalculateEmptySlots(defaultCount, maxDefault);
             int emptyFlips = CalculateEmptySlots(flipsCount, maxFlips);
@@ -47,21 +51,25 @@ namespace ScryForge.Services
 
             if (emptyDefault > 0)
             {
-                _logger.LogInformation("There are {EmptySlots} empty slot(s) on the last page of default cards.", emptyDefault);
+                _logger.LogInformation(
+                    "There are {EmptySlots} empty slot(s) on the last page of default cards.", emptyDefault);
             }
 
             if (emptyFlips > 0)
             {
-                _logger.LogInformation("There are {EmptySlots} empty slot(s) on the last page of double-faced cards.", emptyFlips);
+                _logger.LogInformation(
+                    "There are {EmptySlots} empty slot(s) on the last page of double-faced cards.", emptyFlips);
             }
 
             if (AppConfig.AutoFillEmptySlots)
             {
-                _logger.LogInformation("Empty slots detected, auto-fill is enabled. Continuing without prompt.");
+                _logger.LogInformation(
+                    "Empty slots detected, auto-fill is enabled. Continuing without prompt.");
                 return new EmptySlotsResult(false, emptyDefault, emptyFlips, true);
             }
 
-            _logger.LogInformation("Do you want to fill these empty slots? Press Enter to continue, or type 'Q' to quit.");
+            _logger.LogInformation(
+                "Do you want to fill these empty slots? Press Enter to continue, or type 'Q' to quit.");
 
             Console.Write("> ");
             string? input = Console.ReadLine();

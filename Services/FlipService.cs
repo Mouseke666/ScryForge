@@ -17,7 +17,7 @@ namespace ScryForge.Services
         {
             Directory.CreateDirectory(AppConfig.FlipsFolder);
 
-            var flipCards = cards.Where(c => c.IsFlip);
+            var flipCards = cards.Where(c => c.IsFlip && !string.Equals(c.SetCode, "CUSTOM", StringComparison.OrdinalIgnoreCase));
 
             foreach (var card in flipCards)
             {
@@ -41,5 +41,6 @@ namespace ScryForge.Services
                 }
             }
         }
+
     }
 }

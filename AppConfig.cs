@@ -8,6 +8,7 @@ public static class AppConfig
     public static readonly string CardsFile = Path.Combine(BasePath, "cards.txt");
     public static readonly string PdfPath = Path.Combine(BasePath, "PDF");
     public static readonly string OutputFolder = Path.Combine(BasePath, "Output");
+    public static readonly string CustomFolder = Path.Combine(BasePath, "Custom");
     public static readonly string UpscaledFolder = Path.Combine(PdfPath, "images");
     public static readonly string FlipsFolder = Path.Combine(UpscaledFolder, "flips");
     public static readonly string UpscalerPath = Path.Combine(BasePath, "Upscaler");

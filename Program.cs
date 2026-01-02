@@ -22,6 +22,7 @@ internal class Program
         builder.Services.AddSingleton<PDFOpenService>();
         builder.Services.AddSingleton<IEmptySlotsService, EmptySlotsService>();
         builder.Services.AddSingleton<IPDFNameService, PDFNameService>();
+        builder.Services.AddSingleton<ICustomCardService, CustomCardService>();
         builder.Services.AddHostedService<PipelineService>();
 
         builder.Services.AddHttpClient("Scryfall", client =>

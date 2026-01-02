@@ -19,6 +19,7 @@ public class PipelineService : BackgroundService
     private readonly PDFOpenService _openPdf;
     private readonly IEmptySlotsService _emptySlots;
     private readonly IPDFNameService _pdfNameService;
+    private readonly ICustomCardService _customCardService;
 
     public PipelineService(
         ILogger<PipelineService> logger,
@@ -32,7 +33,8 @@ public class PipelineService : BackgroundService
         IPDFService pdf,
         PDFOpenService openPdf,
         IEmptySlotsService emptySlots,
-        IPDFNameService pdfNameService)
+        IPDFNameService pdfNameService,
+        ICustomCardService customCardService)
     {
         _logger = logger;
         _cleanup = cleanup;
@@ -46,6 +48,7 @@ public class PipelineService : BackgroundService
         _openPdf = openPdf;
         _emptySlots = emptySlots;
         _pdfNameService = pdfNameService;
+        _customCardService = customCardService;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -77,7 +80,7 @@ public class PipelineService : BackgroundService
         _logger.LogInformation(AppVersion.GetFull());
 
         int step = 1;
-        int totalSteps = 11;
+        int totalSteps = 14;
 
         LogStep(ref step, totalSteps, "Cleaning working directories");
         await _cleanup.CleanDirectoryAsync(AppConfig.ScryForgeDownloaderPath);
@@ -96,13 +99,16 @@ public class PipelineService : BackgroundService
             return;
         }
 
-        if (scryfallCards.Count == 0)
+        LogStep(ref step, totalSteps, "Fetching custom cards");
+        IReadOnlyList<CustomCard> customCards = await _customCardService.FetchCustomCardsAsync(AppConfig.CustomFolder);
+
+        if (scryfallCards.Count == 0 && customCards.Count == 0)
         {
-            _logger.LogWarning("No cards fetched from Scryfall. Aborting pipeline.");
+            _logger.LogWarning("No cards fetched from Scryfall and/or no custom cards available. Aborting pipeline.");
             return;
         }
 
-        var emptySlotsResult = await _emptySlots.AnalyzeAsync(scryfallCards, ct);
+        var emptySlotsResult = await _emptySlots.AnalyzeAsync(scryfallCards, customCards, ct);
         if (emptySlotsResult.ShouldStopPipeline)
         {
             _logger.LogInformation("Exiting program by user choice.");
@@ -123,14 +129,26 @@ public class PipelineService : BackgroundService
         }
 
         LogStep(ref step, totalSteps, "Upscaling images");
-        try
+
+        if (scryfallCards != null && scryfallCards.Count > 0)
         {
-            await _upscaler.RunUpscalerAsync(true, AppConfig.ScryForgeDownloaderPath);
+            try
+            {
+                await _upscaler.RunUpscalerAsync(true, AppConfig.ScryForgeDownloaderPath);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Upscaling step failed");
+            }
         }
-        catch (Exception ex)
+        else
         {
-            _logger.LogError(ex, "Upscaling step failed");
+            _logger.LogInformation("No Scryfall cards to upscale, skipping this step.");
         }
+
+
+        LogStep(ref step, totalSteps, "Copy Custom Cards");
+        await _customCardService.CopyCustomCardsAsync(customCards, AppConfig.UpscaledFolder);
 
         LogStep(ref step, totalSteps, "Parsing cards.txt");
         List<CardInfo> cards = new();
@@ -142,6 +160,9 @@ public class PipelineService : BackgroundService
         {
             _logger.LogError(ex, "Parsing cards.txt failed");
         }
+
+        LogStep(ref step, totalSteps, "Parsing Custom Cards");
+        cards.AddRange(await _parser.ParseCustomCardsAsync(customCards));
 
         LogStep(ref step, totalSteps, "Processing flip cards");
         try
