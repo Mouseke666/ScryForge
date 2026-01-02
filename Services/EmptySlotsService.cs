@@ -31,11 +31,9 @@ namespace ScryForge.Services
             if (maxDefault <= 0) maxDefault = 9;
             if (maxFlips <= 0) maxFlips = 8;
 
-            // Tel standaard kaarten
             int defaultCount = cards?.Where(c => !c.IsDoubleFaced).Sum(c => c.Quantity) ?? 0;
             int flipsCount = cards?.Where(c => c.IsDoubleFaced).Sum(c => c.Quantity) ?? 0;
 
-            // Tel custom kaarten (hier gaan we ze als default kaarten tellen)
             int customCount = customCards?.Count ?? 0;
             defaultCount += customCount;
 

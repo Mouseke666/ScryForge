@@ -213,6 +213,13 @@ public class PipelineService : BackgroundService
         {
             _logger.LogError(ex, "Opening folder failed");
         }
+
+        _logger.LogInformation("Pipeline finished");
+        _logger.LogInformation("Thank you for using ScryForge!");
+
+        Console.WriteLine("Press any key to exit...");
+        _ = Console.ReadLine();
+        Environment.Exit(0);
     }
 
     public override async Task StopAsync(CancellationToken cancellationToken)
