@@ -27,6 +27,31 @@ To use ScryForge, open your deck in Moxfield and export it as a text file. Copy 
   - **Important:** The filename after `__back_` must **exactly match** the corresponding front card filename, including the extension.
   - ScryForge will automatically pair front and back images based on this naming convention.
 
+## Upscaler Configuration
+
+ScryForge allows full control over the settings of the upscaler for your cards. The configuration is located in `appsettings.json` under the `Upscaler` section and supports the following options:
+
+```json
+{
+  "Upscaler": {
+    "Model": "digital-art-4x",
+    "Scale": 4,
+    "Threads": 6
+  }
+}
+```
+
+### Fields
+
+- **Model** – The upscaler model to use (e.g., `digital-art-4x`).
+- **Scale** – The resolution multiplier (e.g., `2` or `4`).
+- **Threads** – The number of CPU threads the upscaler can use. This allows you to adjust performance depending on your system. By default, ScryForge uses all available cores.
+
+### Tips
+
+- Increase the number of threads on multi-core systems for faster processing.  
+- Reduce the number of threads on lighter systems to limit CPU usage.
+
 ## Project Structure
 
 - **Services**

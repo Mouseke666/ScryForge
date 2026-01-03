@@ -69,6 +69,8 @@ namespace ScryForge.Services
         //     }
         // }
 
+        //private readonly int _maxConcurrentUpscales = 10; // 4 processen tegelijk, pas aan op CPU/RAM
+
         public async Task<bool> RunUpscalerForCardsAsync(IReadOnlyList<ScryfallCard> cards)
         {
             if (cards == null || cards.Count == 0)
@@ -78,90 +80,60 @@ namespace ScryForge.Services
             }
 
             // Tel alle afbeeldingen van alle kaarten
-            int totalImages = cards.Sum(c =>
-                c.IsDoubleFaced && c.CardFaces != null && c.CardFaces.Count > 1 ? 2 : 1);
+            var allImages = cards.SelectMany(c =>
+            {
+                if (c.IsDoubleFaced && c.CardFaces != null && c.CardFaces.Count > 1)
+                {
+                    return new[]
+                    {
+                        (c.FrontImagePath, c.Name, face: (string?)"Front"),
+                        (c.BackImagePath, c.Name, face: (string?)"Back")
+                    };
+                }
+                return new[] { (c.FrontImagePath, c.Name, (string?)null) };
+            }).ToList();
 
+            int totalImages = allImages.Count;
             int currentImage = 0;
 
-            foreach (var card in cards)
+            using var semaphore = new SemaphoreSlim(AppConfig.UpscalerThreads);
+            var tasks = allImages.Select(async imageTuple =>
             {
-                // Double-faced card
-                if (card.IsDoubleFaced && card.CardFaces != null && card.CardFaces.Count > 1)
+                await semaphore.WaitAsync();
+                try
                 {
-                    var images = new[] { card.FrontImagePath, card.BackImagePath };
+                    var (imagePath, cardName, face) = imageTuple;
 
-                    foreach (var (imagePath, faceName) in images.Select((p, i) => (p, i == 0 ? "Front" : "Back")))
+                    if (string.IsNullOrWhiteSpace(imagePath) || !File.Exists(imagePath))
                     {
-                        if (string.IsNullOrWhiteSpace(imagePath) || !File.Exists(imagePath))
-                        {
-                            _logger.LogWarning(
-                                "Image not found for card {CardName} ({Face}), skipping ([{Current}/{Total}]).",
-                                card.Name,
-                                faceName,
-                                currentImage + 1,
-                                totalImages);
-                            continue;
-                        }
-
-                        currentImage++;
-                        _logger.LogInformation(
-                            "Upscaling [{Current}/{Total}] — {CardName} ({Face})",
-                            currentImage,
-                            totalImages,
-                            card.Name,
-                            faceName);
-
-                        try
-                        {
-                            await RunUpscalerForSingleImageAsync(imagePath, logOutput: false);
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.LogError(
-                                ex,
-                                "Upscaling failed for [{Current}/{Total}] — {CardName} ({Face})",
-                                currentImage,
-                                totalImages,
-                                card.Name,
-                                faceName);
-                        }
-                    }
-                }
-                else // Normale kaart
-                {
-                    if (string.IsNullOrWhiteSpace(card.FrontImagePath) || !File.Exists(card.FrontImagePath))
-                    {
+                        int skipped = Interlocked.Increment(ref currentImage);
                         _logger.LogWarning(
-                            "Image not found for card {CardName}, skipping ([{Current}/{Total}]).",
-                            card.Name,
-                            currentImage + 1,
+                            "Image not found for card {CardName}{Face}, skipping ([{Current}/{Total}]).",
+                            cardName,
+                            face != null ? $" ({face})" : string.Empty,
+                            skipped,
                             totalImages);
-                        continue;
+                        return;
                     }
 
-                    currentImage++;
+                    int index = Interlocked.Increment(ref currentImage);
+
                     _logger.LogInformation(
-                        "Upscaling [{Current}/{Total}] — {CardName}",
-                        currentImage,
+                        "Upscaling [{Current}/{Total}] — {CardName}{Face}",
+                        index,
                         totalImages,
-                        card.Name);
+                        cardName,
+                        face != null ? $" ({face})" : string.Empty);
 
-                    try
-                    {
-                        await RunUpscalerForSingleImageAsync(card.FrontImagePath, logOutput: false);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(
-                            ex,
-                            "Upscaling failed for [{Current}/{Total}] — {CardName}",
-                            currentImage,
-                            totalImages,
-                            card.Name);
-                    }
+                    await RunUpscalerForSingleImageAsync(imagePath, logOutput: false);
                 }
-            }
+                finally
+                {
+                    semaphore.Release();
+                }
+            });
 
+            await Task.WhenAll(tasks);
             return true;
         }
 

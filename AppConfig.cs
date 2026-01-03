@@ -15,17 +15,28 @@ public static class AppConfig
     public static readonly string UpscalerExe = Path.Combine(UpscalerPath, "realesrgan-ncnn-vulkan.exe");
     public static readonly string PDFPath = Path.Combine(BasePath, "PDF");
     public static readonly string PDFExe = Path.Combine(PDFPath, "proxy_pdf_cli.exe");
+
+    // Upscaler settings
     public static string UpscaleModel { get; private set; } = "digital-art-4x";
     public static int UpscaleScale { get; private set; } = 4;
+    public static int UpscalerThreads { get; private set; } = Environment.ProcessorCount; // default aantal cores
+
+    // PDF settings
     public static bool AutoFillEmptySlots { get; private set; } = false;
     public static bool AutoUseSuggestedName { get; private set; } = false;
 
     public static void Initialize(IConfiguration config)
     {
         UpscaleModel = config["Upscaler:Model"] ?? UpscaleModel;
+
         if (int.TryParse(config["Upscaler:Scale"], out var scale))
         {
             UpscaleScale = scale;
+        }
+
+        if (int.TryParse(config["Upscaler:Threads"], out var threads))
+        {
+            UpscalerThreads = threads;
         }
 
         if (bool.TryParse(config["Pdf:AutoFillEmptySlots"], out var autoFill))
