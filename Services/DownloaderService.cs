@@ -5,6 +5,7 @@ using ScryForge.Serialization;
 using Microsoft.Extensions.Logging;
 using ScryForge.Services.Intefaces;
 using System.Text.RegularExpressions;
+using System.Threading;
 
 namespace ScryForge.Services;
 
@@ -14,6 +15,9 @@ public class DownloaderService : IDownloaderService
     private readonly ILogger<DownloaderService> _logger;
     private readonly string _outputFolder;
     private readonly int _maxConcurrentDownloads = 10;
+
+    private int _downloadedCount = 0;
+    private int _totalCount = 0;
 
     public DownloaderService(
         IHttpClientFactory httpClientFactory,
@@ -87,6 +91,12 @@ public class DownloaderService : IDownloaderService
             return;
         }
 
+        // Bereken totaal aantal afbeeldingen (front + back)
+        _totalCount = cards.Sum(c =>
+            (c.ImageUris != null ? 1 : 0) +
+            (c.CardFaces?.Count(cf => cf.ImageUris != null) ?? 0)
+        );
+
         using var semaphore = new SemaphoreSlim(_maxConcurrentDownloads);
         var tasks = new List<Task>();
 
@@ -137,24 +147,17 @@ public class DownloaderService : IDownloaderService
             using var doc = JsonDocument.Parse(json);
             var root = doc.RootElement;
 
-            // Direct card object
             if (root.TryGetProperty("id", out _))
             {
-                return JsonSerializer.Deserialize(
-                    json,
-                    ScryfallJsonContext.Default.ScryfallCard);
+                return JsonSerializer.Deserialize(json, ScryfallJsonContext.Default.ScryfallCard);
             }
 
-            // Search result (data array)
             if (root.TryGetProperty("data", out var dataElement) &&
                 dataElement.ValueKind == JsonValueKind.Array &&
                 dataElement.GetArrayLength() > 0)
             {
                 var firstCardJson = dataElement[0].GetRawText();
-
-                return JsonSerializer.Deserialize(
-                    firstCardJson,
-                    ScryfallJsonContext.Default.ScryfallCard);
+                return JsonSerializer.Deserialize(firstCardJson, ScryfallJsonContext.Default.ScryfallCard);
             }
 
             return null;
@@ -180,10 +183,7 @@ public class DownloaderService : IDownloaderService
             {
                 try
                 {
-                    using var response = await _http.GetAsync(
-                        url,
-                        HttpCompletionOption.ResponseHeadersRead,
-                        ct);
+                    using var response = await _http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, ct);
 
                     if (response.IsSuccessStatusCode)
                         return await response.Content.ReadAsStringAsync(ct);
@@ -219,7 +219,6 @@ public class DownloaderService : IDownloaderService
     {
         if (card.ImageUris != null)
         {
-            // Normale kaart
             await DownloadSingleImageAsync(card, card.ImageUris, card.Name, card.Set, card.CollectorNumber, null, ct);
             return;
         }
@@ -232,7 +231,7 @@ public class DownloaderService : IDownloaderService
                 if (face.ImageUris == null)
                     continue;
 
-                string suffix = index == 0 ? "front" : "back";
+                string suffix = index == 0 ? "Front" : "Back";
 
                 await DownloadSingleImageAsync(card, face.ImageUris, face.Name, card.Set, card.CollectorNumber, suffix, ct);
                 index++;
@@ -240,15 +239,14 @@ public class DownloaderService : IDownloaderService
         }
     }
 
-
     private async Task DownloadSingleImageAsync(
-    ScryfallCard card,
-    ImageUris imageUris,
-    string cardName,
-    string setCode,
-    string collectorNumber,
-    string? faceSuffix,
-    CancellationToken ct)
+        ScryfallCard card,
+        ImageUris imageUris,
+        string cardName,
+        string setCode,
+        string collectorNumber,
+        string? faceSuffix,
+        CancellationToken ct)
     {
         string imageUrl = GetBestImageUrl(imageUris);
         string extension = Path.GetExtension(new Uri(imageUrl).AbsolutePath);
@@ -266,15 +264,16 @@ public class DownloaderService : IDownloaderService
             await File.WriteAllBytesAsync(fullPath, bytes, ct);
         }
 
-        // Front/Back toewijzing
-        if (faceSuffix == "back")
+        if (faceSuffix == "Back")
             card.BackImagePath = fullPath;
         else
             card.FrontImagePath = fullPath;
 
-        _logger.LogInformation("Downloaded → {File}", fileName);
-    }
+        int current = Interlocked.Increment(ref _downloadedCount);
 
+        string displayName = faceSuffix == null ? cardName : $"{cardName} // {faceSuffix}";
+        _logger.LogInformation("Downloaded [{Current}/{Total}] — {Name}", current, _totalCount, displayName);
+    }
 
     private static string GetBestImageUrl(ImageUris u) =>
         u.Png
