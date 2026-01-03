@@ -93,11 +93,25 @@ jobs:
             /p:InformationalVersion=$env:APP_VERSION `
             --output ./publish
 
-      - name: Compress build output
+      - name: Compress build output into folder
         shell: pwsh
         run: |
-          Compress-Archive -Path "./publish/*" `
-            -DestinationPath "ScryForge_${{ github.ref_name }}.zip" -Force
+          $zipName = "ScryForge_${{ github.ref_name }}.zip"
+          $tempDir = "$env:TEMP\ScryForgeZip"
+          
+          # Clean up temp folder if it exists
+          if (Test-Path $tempDir) { Remove-Item $tempDir -Recurse -Force }
+          New-Item -ItemType Directory -Path $tempDir | Out-Null
+          
+          # Copy all publish files into a subfolder inside temp
+          $destFolder = Join-Path $tempDir "ScryForge"
+          Copy-Item -Path "./publish/*" -Destination $destFolder -Recurse
+          
+          # Create the zip from the folder
+          Compress-Archive -Path "$tempDir\ScryForge" -DestinationPath $zipName -Force
+          
+          # Optional: remove temp folder
+          Remove-Item $tempDir -Recurse -Force
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
