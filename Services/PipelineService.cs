@@ -125,22 +125,28 @@ public class PipelineService : BackgroundService
             _logger.LogError(ex, "Downloading images failed");
         }
 
-        LogStep(ref step, totalSteps, "Upscaling images");
+        // LogStep(ref step, totalSteps, "Upscaling images");
 
-        if (scryfallCards != null && scryfallCards.Count > 0)
+        // if (scryfallCards != null && scryfallCards.Count > 0)
+        // {
+        //     try
+        //     {
+        //         await _upscaler.RunUpscalerAsync(true, AppConfig.ScryForgeDownloaderPath);
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         _logger.LogError(ex, "Upscaling step failed");
+        //     }
+        // }
+        // else
+        // {
+        //     _logger.LogInformation("No Scryfall cards to upscale, skipping this step.");
+        // }
+
+        LogStep(ref step, totalSteps, "Upscaling images");
+        if (!await _upscaler.RunUpscalerForCardsAsync(scryfallCards))
         {
-            try
-            {
-                await _upscaler.RunUpscalerAsync(true, AppConfig.ScryForgeDownloaderPath);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Upscaling step failed");
-            }
-        }
-        else
-        {
-            _logger.LogInformation("No Scryfall cards to upscale, skipping this step.");
+            return;
         }
 
         LogStep(ref step, totalSteps, "Copy Custom Cards");

@@ -4,7 +4,6 @@ using System.Text.Json;
 using ScryForge.Serialization;
 using Microsoft.Extensions.Logging;
 using ScryForge.Services.Intefaces;
-using System.Collections.Concurrent;
 using System.Text.RegularExpressions;
 
 namespace ScryForge.Services;
@@ -41,8 +40,8 @@ public class DownloaderService : IDownloaderService
 
         string[] lines = await File.ReadAllLinesAsync(cardsFile, ct);
 
-        // Dictionary om kaarten samen te voegen op basis van Name + Set + CollectorNumber
-        var aggregatedCards = new Dictionary<string, (int Quantity, string Name, string? Set, string? CN)>(StringComparer.OrdinalIgnoreCase);
+        var aggregatedCards = new Dictionary<string, (int Quantity, string Name, string? Set, string? CN)>(
+            StringComparer.OrdinalIgnoreCase);
 
         foreach (string rawLine in lines)
         {
@@ -60,9 +59,8 @@ public class DownloaderService : IDownloaderService
 
             string key = $"{name}||{set}||{cn}";
 
-            if (aggregatedCards.ContainsKey(key))
+            if (aggregatedCards.TryGetValue(key, out var existing))
             {
-                var existing = aggregatedCards[key];
                 aggregatedCards[key] = (existing.Quantity + quantity, name, set, cn);
             }
             else
@@ -74,8 +72,7 @@ public class DownloaderService : IDownloaderService
         var result = new List<ScryfallCard>();
 
         var fetchTasks = aggregatedCards.Values.Select(entry =>
-            FetchAndAddCardAsync(entry.Quantity, entry.Name, entry.Set, entry.CN, result, ct)
-        ).ToList();
+            FetchAndAddCardAsync(entry.Quantity, entry.Name, entry.Set, entry.CN, result, ct));
 
         await Task.WhenAll(fetchTasks);
 
@@ -91,28 +88,26 @@ public class DownloaderService : IDownloaderService
         }
 
         using var semaphore = new SemaphoreSlim(_maxConcurrentDownloads);
-
-        var downloadTasks = new List<Task>();
+        var tasks = new List<Task>();
 
         foreach (var card in cards)
         {
             await semaphore.WaitAsync(ct);
 
-            downloadTasks.Add(
-                Task.Run(async () =>
+            tasks.Add(Task.Run(async () =>
+            {
+                try
                 {
-                    try
-                    {
-                        await ProcessCardAsync(card, ct);
-                    }
-                    finally
-                    {
-                        semaphore.Release();
-                    }
-                }, ct));
+                    await ProcessCardAsync(card, ct);
+                }
+                finally
+                {
+                    semaphore.Release();
+                }
+            }, ct));
         }
 
-        await Task.WhenAll(downloadTasks);
+        await Task.WhenAll(tasks);
     }
 
     private async Task FetchAndAddCardAsync(
@@ -124,7 +119,6 @@ public class DownloaderService : IDownloaderService
         CancellationToken ct)
     {
         string? json = await FetchCardJsonWithRetryAsync(new CardRequest(name, set, cn), ct);
-
         if (json == null)
             return;
 
@@ -136,20 +130,52 @@ public class DownloaderService : IDownloaderService
         }
     }
 
+    private static ScryfallCard? ParseCard(string json)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+
+            // Direct card object
+            if (root.TryGetProperty("id", out _))
+            {
+                return JsonSerializer.Deserialize(
+                    json,
+                    ScryfallJsonContext.Default.ScryfallCard);
+            }
+
+            // Search result (data array)
+            if (root.TryGetProperty("data", out var dataElement) &&
+                dataElement.ValueKind == JsonValueKind.Array &&
+                dataElement.GetArrayLength() > 0)
+            {
+                var firstCardJson = dataElement[0].GetRawText();
+
+                return JsonSerializer.Deserialize(
+                    firstCardJson,
+                    ScryfallJsonContext.Default.ScryfallCard);
+            }
+
+            return null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
     private async Task<string?> FetchCardJsonWithRetryAsync(
         CardRequest req,
         CancellationToken ct,
         int maxRetries = 3)
     {
-        ArgumentNullException.ThrowIfNull(req);
         ct.ThrowIfCancellationRequested();
 
         var urls = BuildCandidateUrls(req).ToList();
 
         for (int attempt = 1; attempt <= maxRetries; attempt++)
         {
-            ct.ThrowIfCancellationRequested();
-
             foreach (var url in urls)
             {
                 try
@@ -160,42 +186,21 @@ public class DownloaderService : IDownloaderService
                         ct);
 
                     if (response.IsSuccessStatusCode)
-                    {
                         return await response.Content.ReadAsStringAsync(ct);
-                    }
 
                     if (response.StatusCode == HttpStatusCode.NotFound)
                         continue;
 
                     if ((int)response.StatusCode == 429 && attempt < maxRetries)
                     {
-                        _logger.LogWarning(
-                            "Rate limited by Scryfall (attempt {Attempt}/{Max}). Waiting 200ms...",
-                            attempt,
-                            maxRetries);
-
                         await Task.Delay(200, ct);
                         break;
                     }
                 }
-                catch (HttpRequestException ex)
+                catch (HttpRequestException) when (attempt < maxRetries)
                 {
-                    _logger.LogWarning(
-                        ex,
-                        "Network error fetching card data (attempt {Attempt}/{Max}): {Name}",
-                        attempt,
-                        maxRetries,
-                        req.Name);
-
-                    if (attempt < maxRetries)
-                    {
-                        await Task.Delay(200 * attempt, ct);
-                        break;
-                    }
-                }
-                catch (TaskCanceledException) when (ct.IsCancellationRequested)
-                {
-                    throw;
+                    await Task.Delay(200 * attempt, ct);
+                    break;
                 }
             }
         }
@@ -210,62 +215,18 @@ public class DownloaderService : IDownloaderService
         return null;
     }
 
-    private IEnumerable<string> BuildCandidateUrls(CardRequest req)
-    {
-        if (!string.IsNullOrWhiteSpace(req.SetCode) &&
-            !string.IsNullOrWhiteSpace(req.CollectorNumber))
-        {
-            yield return
-                $"cards/{req.SetCode.ToLowerInvariant()}/" +
-                $"{WebUtility.UrlEncode(req.CollectorNumber)}";
-        }
-
-        if (!string.IsNullOrWhiteSpace(req.SetCode) &&
-            !string.IsNullOrWhiteSpace(req.CollectorNumber))
-        {
-            yield return
-                $"cards/search?q=" +
-                $"set:{req.SetCode.ToLowerInvariant()}+" +
-                $"cn:\"{EscapeQuery(req.CollectorNumber)}\"";
-        }
-    }
-
-    private static string EscapeQuery(string value) => value.Replace("\"", "\\\"");
-
-    private static ScryfallCard? ParseCard(string json)
-    {
-        try
-        {
-            using var doc = JsonDocument.Parse(json);
-            var root = doc.RootElement;
-
-            if (root.TryGetProperty("id", out _))
-            {
-                return JsonSerializer.Deserialize<ScryfallCard>(json, ScryfallJsonContext.Default.ScryfallCard);
-            }
-
-            if (root.TryGetProperty("data", out var dataElement) && dataElement.ValueKind == JsonValueKind.Array)
-            {
-                if (dataElement.GetArrayLength() > 0)
-                {
-                    var firstCardJson = dataElement[0].GetRawText();
-                    return JsonSerializer.Deserialize<ScryfallCard>(firstCardJson, ScryfallJsonContext.Default.ScryfallCard);
-                }
-            }
-
-            return null;
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
     private async Task ProcessCardAsync(ScryfallCard card, CancellationToken ct)
     {
         if (card.ImageUris != null)
         {
-            await DownloadSingleImageAsync(card.ImageUris, card.Name, card.Set, card.CollectorNumber, null, ct);
+            await DownloadSingleImageAsync(
+                card,
+                card.ImageUris,
+                card.Name,
+                card.Set,
+                card.CollectorNumber,
+                null,
+                ct);
             return;
         }
 
@@ -274,7 +235,14 @@ public class DownloaderService : IDownloaderService
             var front = card.CardFaces.First();
             if (front.ImageUris != null)
             {
-                await DownloadSingleImageAsync(front.ImageUris, front.Name, card.Set, card.CollectorNumber, "front", ct);
+                await DownloadSingleImageAsync(
+                    card,
+                    front.ImageUris,
+                    front.Name,
+                    card.Set,
+                    card.CollectorNumber,
+                    "front",
+                    ct);
             }
             return;
         }
@@ -288,13 +256,23 @@ public class DownloaderService : IDownloaderService
                     continue;
 
                 string suffix = index == 0 ? "front" : "back";
-                await DownloadSingleImageAsync(face.ImageUris, face.Name, card.Set, card.CollectorNumber, suffix, ct);
+
+                await DownloadSingleImageAsync(
+                    card,
+                    face.ImageUris,
+                    face.Name,
+                    card.Set,
+                    card.CollectorNumber,
+                    suffix,
+                    ct);
+
                 index++;
             }
         }
     }
 
     private async Task DownloadSingleImageAsync(
+        ScryfallCard card,
         ImageUris imageUris,
         string cardName,
         string setCode,
@@ -313,23 +291,17 @@ public class DownloaderService : IDownloaderService
         string fullPath = Path.Combine(_outputFolder, fileName);
 
         if (File.Exists(fullPath))
+        {
+            card.ImagePath = fullPath;
             return;
+        }
 
-        try
-        {
-            byte[] bytes = await _http.GetByteArrayAsync(imageUrl, ct);
-            await File.WriteAllBytesAsync(fullPath, bytes, ct);
+        byte[] bytes = await _http.GetByteArrayAsync(imageUrl, ct);
+        await File.WriteAllBytesAsync(fullPath, bytes, ct);
 
-            _logger.LogInformation("Downloaded → {File}", fileName);
-        }
-        catch (OperationCanceledException)
-        {
-            throw;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Failed to download image for {Name} ({Url})", cardName, imageUrl);
-        }
+        card.ImagePath = fullPath;
+
+        _logger.LogInformation("Downloaded → {File}", fileName);
     }
 
     private static string GetBestImageUrl(ImageUris u) =>
@@ -379,4 +351,23 @@ public class DownloaderService : IDownloaderService
 
     private static string SanitizeFileName(string name) =>
         string.Join("_", name.Split(Path.GetInvalidFileNameChars()));
+
+    private IEnumerable<string> BuildCandidateUrls(CardRequest req)
+    {
+        if (!string.IsNullOrWhiteSpace(req.SetCode) &&
+            !string.IsNullOrWhiteSpace(req.CollectorNumber))
+        {
+            yield return
+                $"cards/{req.SetCode.ToLowerInvariant()}/" +
+                $"{WebUtility.UrlEncode(req.CollectorNumber)}";
+
+            yield return
+                $"cards/search?q=" +
+                $"set:{req.SetCode.ToLowerInvariant()}+" +
+                $"cn:\"{EscapeQuery(req.CollectorNumber)}\"";
+        }
+    }
+
+    private static string EscapeQuery(string value) =>
+        value.Replace("\"", "\\\"");
 }

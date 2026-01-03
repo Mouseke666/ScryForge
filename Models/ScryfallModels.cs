@@ -30,6 +30,7 @@ namespace ScryForge.Models
     {
         public bool IsDoubleFaced => Layout is "flip" or "transform" or "modal_dfc";
         public int Quantity { get; set; } = 1;
+        public string? ImagePath { get; set; }
     }
 
 
