@@ -9,10 +9,6 @@ namespace ScryForge.Services
     {
         private readonly ILogger<CardParserService> _logger;
 
-        private static readonly Regex CardLineRegex = new(
-            @"^\s*(\d+)\s+(.+?)\s+\(([A-Z0-9]+)\)\s+([^\s()]+)\s*$",
-            RegexOptions.Compiled | RegexOptions.IgnoreCase);
-
         public CardParserService(ILogger<CardParserService> logger)
         {
             _logger = logger;
@@ -20,26 +16,30 @@ namespace ScryForge.Services
 
         public async Task<List<CardInfo>> ParseCardsAsync(string filePath)
         {
-            var cards = new List<CardInfo>();
+            var result = new List<CardInfo>();
 
             if (!File.Exists(filePath))
             {
                 _logger.LogWarning("File not found: {FilePath}", filePath);
-                return cards;
+                return result;
             }
 
             var folder = AppConfig.UpscaledFolder;
             var lines = await File.ReadAllLinesAsync(filePath);
-
-            var cleanedLines = lines.Select(l => Regex.Replace(l, @"\*F\*\s*$", "", RegexOptions.IgnoreCase).Trim());
 
             var cardLineRegex = new Regex(
                 @"^\s*(?:(\d+)\s+)?(.+?)\s*(?:\(\s*([A-Z0-9]{2,5})\s*\))?\s*([0-9A-Z\-]+)?\s*$",
                 RegexOptions.IgnoreCase | RegexOptions.Compiled
             );
 
-            foreach (var line in cleanedLines)
+            var aggregated = new Dictionary<(string Name, string Set, string Number), int>();
+
+            foreach (var rawLine in lines)
             {
+                var line = Regex.Replace(rawLine, @"\*F\*\s*$", "", RegexOptions.IgnoreCase).Trim();
+                if (string.IsNullOrWhiteSpace(line))
+                    continue;
+
                 var match = cardLineRegex.Match(line);
                 if (!match.Success)
                 {
@@ -48,17 +48,24 @@ namespace ScryForge.Services
                 }
 
                 var quantity = match.Groups[1].Success ? int.Parse(match.Groups[1].ValueSpan) : 1;
-                var fullName = match.Groups[2].Value.Trim();
-                var setCode = match.Groups[3].Success ? match.Groups[3].Value.Trim().ToUpper() : null;
+                var name = match.Groups[2].Value.Trim();
+                var set = match.Groups[3].Success ? match.Groups[3].Value.Trim().ToUpperInvariant() : null;
                 var number = match.Groups[4].Success ? match.Groups[4].Value.Trim() : null;
 
-                if (setCode == null || number == null)
+                if (set == null || number == null)
                 {
-                    _logger.LogWarning("Missing set code or number for: {Name}", fullName);
+                    _logger.LogWarning("Missing set code or number for: {Name}", name);
                     continue;
                 }
 
-                string[] names = fullName.Split(" / ", 2, StringSplitOptions.TrimEntries);
+                var key = (name, set, number);
+                aggregated[key] = aggregated.TryGetValue(key, out var existing) ? existing + quantity : quantity;
+            }
+
+            foreach (var entry in aggregated)
+            {
+                var (fullName, setCode, number) = entry.Key;
+                var quantity = entry.Value;
 
                 List<string> files = new();
 
@@ -74,70 +81,42 @@ namespace ScryForge.Services
                     var frontFile = files[0];
                     var backFile = files[1];
 
-                    for (int i = 1; i <= quantity; i++)
+                    var card = new CardInfo
                     {
-                        var cardInfo = await CopyDoubleSidedAsync(frontFile, backFile, fullName, setCode, number, i);
-                        cards.Add(cardInfo);
-                    }
+                        Quantity = quantity,
+                        Name = fullName,
+                        SetCode = setCode,
+                        Number = number,
+                        FrontFileName = Path.GetFileName(frontFile),
+                        BackFileName = Path.GetFileName(backFile)
+                    };
 
-                    File.Delete(frontFile);
-                    File.Delete(backFile);
-                    continue;
+                    result.Add(card);
                 }
                 else if (files.Count == 1)
                 {
-                    await AddCardCopiesAsync(cards, files[0], fullName, setCode, number, quantity);
+                    await AddCardCopiesAsync(result, files[0], fullName, setCode, number, quantity);
                 }
                 else
                 {
-                    _logger.LogWarning("Card files not found: {Name} [{SetCode}] {Number}", fullName, setCode, number);
+                    _logger.LogWarning(
+                        "Card files not found: {Name} [{SetCode}] {Number}",
+                        fullName,
+                        setCode,
+                        number
+                    );
                 }
             }
 
-            return cards;
+            return result;
         }
 
         private static IEnumerable<string> GetCollectorNumberVariants(string number)
         {
             yield return number;
-
             yield return number.ToUpperInvariant();
-
             if (number.EndsWith("p", StringComparison.OrdinalIgnoreCase))
-            {
                 yield return number[..^1];
-            }
-        }
-
-        private async Task<CardInfo> CopyDoubleSidedAsync(
-            string frontFile,
-            string backFile,
-            string fullName,
-            string setCode,
-            string number,
-            int index)
-        {
-            string folder = Path.GetDirectoryName(frontFile)!;
-            string ext = Path.GetExtension(frontFile);
-            string baseName = Path.GetFileNameWithoutExtension(frontFile);
-
-            string frontCopy = Path.Combine(folder, $"{baseName} - {index}{ext}");
-            if (!File.Exists(frontCopy))
-                await CopyFileAsync(frontFile, frontCopy);
-
-            string backCopy = Path.Combine(folder, $"__back_{baseName} - {index}{ext}");
-            if (!File.Exists(backCopy))
-                await CopyFileAsync(backFile, backCopy);
-
-            return new CardInfo
-            {
-                Quantity = 1,
-                Name = fullName,
-                SetCode = setCode,
-                Number = number,
-                FrontFileName = Path.GetFileName(frontCopy),
-                BackFileName = Path.GetFileName(backCopy)
-            };
         }
 
         private async Task AddCardCopiesAsync(
@@ -149,43 +128,19 @@ namespace ScryForge.Services
             int quantity,
             bool isBackSide = false)
         {
-            if (baseFile == null) return;
-
-            var folder = Path.GetDirectoryName(baseFile)!;
-            var baseName = Path.GetFileNameWithoutExtension(baseFile);
-            var ext = Path.GetExtension(baseFile);
-
-            for (int i = 1; i <= quantity; i++)
-            {
-                string copyPath = Path.Combine(folder, $"{baseName} - {i}{ext}");
-
-                if (!File.Exists(copyPath))
-                    await CopyFileAsync(baseFile, copyPath, overwrite: false);
-
-                cards.Add(new CardInfo
-                {
-                    Quantity = 1,
-                    Name = fullName,
-                    SetCode = setCode,
-                    Number = number,
-                    FrontFileName = isBackSide ? "" : Path.GetFileName(copyPath),
-                    BackFileName = isBackSide ? Path.GetFileName(copyPath) : ""
-                });
-            }
-
-            if (File.Exists(baseFile))
-                File.Delete(baseFile);
-        }
-
-        private static async Task CopyFileAsync(string source, string destination, bool overwrite = false)
-        {
-            if (File.Exists(destination) && !overwrite)
+            if (string.IsNullOrWhiteSpace(baseFile))
                 return;
 
-            const int bufferSize = 81920;
-            using var sourceStream = new FileStream(source, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize, useAsync: true);
-            using var destinationStream = new FileStream(destination, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize, useAsync: true);
-            await sourceStream.CopyToAsync(destinationStream);
+            cards.Add(new CardInfo
+            {
+                Quantity = quantity,
+                Name = fullName,
+                SetCode = setCode,
+                Number = number,
+                FrontFileName = isBackSide ? "" : Path.GetFileName(baseFile),
+                BackFileName = isBackSide ? Path.GetFileName(baseFile) : ""
+            });
+            await Task.CompletedTask;
         }
 
         private static List<string> FindFiles(string folder, string setCode, string number)
@@ -222,9 +177,7 @@ namespace ScryForge.Services
                 @"^\s*(?:(\d+)\s+)?(.+?)(?:\s*\(|$)",
                 RegexOptions.IgnoreCase);
 
-            var name = match.Success
-                ? match.Groups[2].Value.Trim()
-                : firstValidLine;
+            var name = match.Success ? match.Groups[2].Value.Trim() : firstValidLine;
 
             foreach (var c in Path.GetInvalidFileNameChars())
                 name = name.Replace(c, '_');
@@ -267,6 +220,5 @@ namespace ScryForge.Services
             _logger.LogInformation("Converted {Count} custom cards into CardInfo format.", cards.Count);
             return cards;
         }
-
     }
 }

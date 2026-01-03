@@ -11,7 +11,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<DownloaderService>();
         services.AddSingleton<UpscalerService>();
         services.AddSingleton<CopyService>();
-        services.AddSingleton<FlipService>();
+        services.AddSingleton<CardCopyService>();
         services.AddSingleton<PDFService>();
         services.AddSingleton<PDFOpenService>();
 

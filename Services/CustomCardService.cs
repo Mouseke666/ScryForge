@@ -59,7 +59,7 @@ public class CustomCardService : ICustomCardService
             });
         }
 
-        _logger.LogInformation("Loaded {Count} custom cards from {CustomFolder}", cards.Count, customFolder);
+        _logger.LogInformation("Loaded {Count} custom cards", cards.Count);
         return Task.FromResult<IReadOnlyList<CustomCard>>(cards);
     }
 

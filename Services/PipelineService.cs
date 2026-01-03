@@ -13,8 +13,7 @@ public class PipelineService : BackgroundService
     private readonly ICardParserService _parser;
     private readonly IDownloaderService _downloader;
     private readonly UpscalerService _upscaler;
-    private readonly ICopyService _copy;
-    private readonly IFlipService _flips;
+    private readonly ICardCopyService _flips;
     private readonly IPDFService _pdf;
     private readonly PDFOpenService _openPdf;
     private readonly IEmptySlotsService _emptySlots;
@@ -28,8 +27,7 @@ public class PipelineService : BackgroundService
         ICardParserService parser,
         IDownloaderService downloader,
         UpscalerService upscaler,
-        ICopyService copy,
-        IFlipService flips,
+        ICardCopyService flips,
         IPDFService pdf,
         PDFOpenService openPdf,
         IEmptySlotsService emptySlots,
@@ -42,7 +40,6 @@ public class PipelineService : BackgroundService
         _parser = parser;
         _downloader = downloader;
         _upscaler = upscaler;
-        _copy = copy;
         _flips = flips;
         _pdf = pdf;
         _openPdf = openPdf;
@@ -86,7 +83,7 @@ public class PipelineService : BackgroundService
         await _cleanup.CleanDirectoryAsync(AppConfig.ScryForgeDownloaderPath);
         await _cleanup.CleanDirectoryAsync(AppConfig.UpscaledFolder);
 
-        LogStep(ref step, totalSteps, "Fetching Scryfall cards (JSON)");
+        LogStep(ref step, totalSteps, "Fetching Scryfall cards");
 
         List<ScryfallCard> scryfallCards;
         try
@@ -146,7 +143,6 @@ public class PipelineService : BackgroundService
             _logger.LogInformation("No Scryfall cards to upscale, skipping this step.");
         }
 
-
         LogStep(ref step, totalSteps, "Copy Custom Cards");
         await _customCardService.CopyCustomCardsAsync(customCards, AppConfig.UpscaledFolder);
 
@@ -167,7 +163,7 @@ public class PipelineService : BackgroundService
         LogStep(ref step, totalSteps, "Processing flip cards");
         try
         {
-            _flips.ProcessFlipCards(cards);
+            _flips.ProcessCards(cards);
         }
         catch (Exception ex)
         {

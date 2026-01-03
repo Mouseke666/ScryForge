@@ -31,7 +31,6 @@ public class DownloaderService : IDownloaderService
 
     public async Task<IReadOnlyList<ScryfallCard>> FetchScryfallCardsAsync(CancellationToken ct = default)
     {
-        var result = new ConcurrentBag<ScryfallCard>();
         var cardsFile = Path.Combine(AppConfig.BasePath, "cards.txt");
 
         if (!File.Exists(cardsFile))
@@ -42,7 +41,8 @@ public class DownloaderService : IDownloaderService
 
         string[] lines = await File.ReadAllLinesAsync(cardsFile, ct);
 
-        var fetchTasks = new List<Task>();
+        // Dictionary om kaarten samen te voegen op basis van Name + Set + CollectorNumber
+        var aggregatedCards = new Dictionary<string, (int Quantity, string Name, string? Set, string? CN)>(StringComparer.OrdinalIgnoreCase);
 
         foreach (string rawLine in lines)
         {
@@ -58,11 +58,28 @@ public class DownloaderService : IDownloaderService
                 continue;
             }
 
-            fetchTasks.Add(FetchAndAddCardAsync(quantity, name, set, cn, result, ct));
+            string key = $"{name}||{set}||{cn}";
+
+            if (aggregatedCards.ContainsKey(key))
+            {
+                var existing = aggregatedCards[key];
+                aggregatedCards[key] = (existing.Quantity + quantity, name, set, cn);
+            }
+            else
+            {
+                aggregatedCards[key] = (quantity, name, set, cn);
+            }
         }
 
+        var result = new List<ScryfallCard>();
+
+        var fetchTasks = aggregatedCards.Values.Select(entry =>
+            FetchAndAddCardAsync(entry.Quantity, entry.Name, entry.Set, entry.CN, result, ct)
+        ).ToList();
+
         await Task.WhenAll(fetchTasks);
-        return result.ToList();
+
+        return result;
     }
 
     public async Task DownloadImagesAsync(IReadOnlyList<ScryfallCard> cards, CancellationToken ct = default)
@@ -103,7 +120,7 @@ public class DownloaderService : IDownloaderService
         string name,
         string? set,
         string? cn,
-        ConcurrentBag<ScryfallCard> result,
+        List<ScryfallCard> result,
         CancellationToken ct)
     {
         string? json = await FetchCardJsonWithRetryAsync(new CardRequest(name, set, cn), ct);
@@ -115,14 +132,14 @@ public class DownloaderService : IDownloaderService
         if (card != null)
         {
             card.Quantity = quantity;
-            result.Add(card);
+            lock (result) result.Add(card);
         }
     }
 
     private async Task<string?> FetchCardJsonWithRetryAsync(
-    CardRequest req,
-    CancellationToken ct,
-    int maxRetries = 3)
+        CardRequest req,
+        CancellationToken ct,
+        int maxRetries = 3)
     {
         ArgumentNullException.ThrowIfNull(req);
         ct.ThrowIfCancellationRequested();
@@ -144,16 +161,11 @@ public class DownloaderService : IDownloaderService
 
                     if (response.IsSuccessStatusCode)
                     {
-                        // var json = await response.Content.ReadAsStringAsync(ct);
-                        // _logger.LogInformation("Fetched JSON: {Json}", json);
-                        // return json;
                         return await response.Content.ReadAsStringAsync(ct);
                     }
 
                     if (response.StatusCode == HttpStatusCode.NotFound)
-                    {
                         continue;
-                    }
 
                     if ((int)response.StatusCode == 429 && attempt < maxRetries)
                     {
@@ -218,10 +230,7 @@ public class DownloaderService : IDownloaderService
         }
     }
 
-    private static string EscapeQuery(string value)
-    {
-        return value.Replace("\"", "\\\"");
-    }
+    private static string EscapeQuery(string value) => value.Replace("\"", "\\\"");
 
     private static ScryfallCard? ParseCard(string json)
     {
@@ -333,21 +342,19 @@ public class DownloaderService : IDownloaderService
         ?? throw new InvalidOperationException("No valid Scryfall image URL found");
 
     private static bool TryParseLine(
-    string line,
-    out int quantity,
-    out string name,
-    out string? setCode,
-    out string? collectorNumber)
+        string line,
+        out int quantity,
+        out string name,
+        out string? setCode,
+        out string? collectorNumber)
     {
-        quantity = 1; // default
+        quantity = 1;
         name = "";
         setCode = null;
         collectorNumber = null;
 
-        // verwijder trailing "*F*" zoals je deed
         line = Regex.Replace(line, @"\*F\*\s*$", "", RegexOptions.IgnoreCase).Trim();
 
-        // Regex: optioneel aantal aan het begin, gevolgd door naam, set (tussen haakjes), collector number
         var match = Regex.Match(
             line,
             @"^\s*(?:(\d+)\s+)?(.+?)\s*(?:\(\s*([A-Z0-9]{2,5})\s*\))?\s*([0-9A-Z\-]+)?\s*$",
@@ -356,7 +363,6 @@ public class DownloaderService : IDownloaderService
         if (!match.Success)
             return false;
 
-        // Quantity als het bestaat, anders default 1
         if (match.Groups[1].Success)
             quantity = int.Parse(match.Groups[1].Value);
 
@@ -370,7 +376,6 @@ public class DownloaderService : IDownloaderService
 
         return true;
     }
-
 
     private static string SanitizeFileName(string name) =>
         string.Join("_", name.Split(Path.GetInvalidFileNameChars()));
