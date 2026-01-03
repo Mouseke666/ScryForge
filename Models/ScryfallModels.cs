@@ -30,9 +30,18 @@ namespace ScryForge.Models
     {
         public bool IsDoubleFaced => Layout is "flip" or "transform" or "modal_dfc";
         public int Quantity { get; set; } = 1;
-        public string? ImagePath { get; set; }
-    }
 
+        // Nieuw: front/back voor flipcards
+        public string? FrontImagePath { get; set; }
+        public string? BackImagePath { get; set; }
+
+        // Voor backward compatibiliteit
+        public string? ImagePath
+        {
+            get => FrontImagePath; // normale kaarten gebruiken FrontImagePath
+            set => FrontImagePath = value;
+        }
+    }
 
     public record CardFace
     (

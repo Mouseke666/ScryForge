@@ -219,31 +219,8 @@ public class DownloaderService : IDownloaderService
     {
         if (card.ImageUris != null)
         {
-            await DownloadSingleImageAsync(
-                card,
-                card.ImageUris,
-                card.Name,
-                card.Set,
-                card.CollectorNumber,
-                null,
-                ct);
-            return;
-        }
-
-        if (card.Layout == "adventure" && card.CardFaces?.Any() == true)
-        {
-            var front = card.CardFaces.First();
-            if (front.ImageUris != null)
-            {
-                await DownloadSingleImageAsync(
-                    card,
-                    front.ImageUris,
-                    front.Name,
-                    card.Set,
-                    card.CollectorNumber,
-                    "front",
-                    ct);
-            }
+            // Normale kaart
+            await DownloadSingleImageAsync(card, card.ImageUris, card.Name, card.Set, card.CollectorNumber, null, ct);
             return;
         }
 
@@ -257,28 +234,21 @@ public class DownloaderService : IDownloaderService
 
                 string suffix = index == 0 ? "front" : "back";
 
-                await DownloadSingleImageAsync(
-                    card,
-                    face.ImageUris,
-                    face.Name,
-                    card.Set,
-                    card.CollectorNumber,
-                    suffix,
-                    ct);
-
+                await DownloadSingleImageAsync(card, face.ImageUris, face.Name, card.Set, card.CollectorNumber, suffix, ct);
                 index++;
             }
         }
     }
 
+
     private async Task DownloadSingleImageAsync(
-        ScryfallCard card,
-        ImageUris imageUris,
-        string cardName,
-        string setCode,
-        string collectorNumber,
-        string? faceSuffix,
-        CancellationToken ct)
+    ScryfallCard card,
+    ImageUris imageUris,
+    string cardName,
+    string setCode,
+    string collectorNumber,
+    string? faceSuffix,
+    CancellationToken ct)
     {
         string imageUrl = GetBestImageUrl(imageUris);
         string extension = Path.GetExtension(new Uri(imageUrl).AbsolutePath);
@@ -290,19 +260,21 @@ public class DownloaderService : IDownloaderService
 
         string fullPath = Path.Combine(_outputFolder, fileName);
 
-        if (File.Exists(fullPath))
+        if (!File.Exists(fullPath))
         {
-            card.ImagePath = fullPath;
-            return;
+            byte[] bytes = await _http.GetByteArrayAsync(imageUrl, ct);
+            await File.WriteAllBytesAsync(fullPath, bytes, ct);
         }
 
-        byte[] bytes = await _http.GetByteArrayAsync(imageUrl, ct);
-        await File.WriteAllBytesAsync(fullPath, bytes, ct);
-
-        card.ImagePath = fullPath;
+        // Front/Back toewijzing
+        if (faceSuffix == "back")
+            card.BackImagePath = fullPath;
+        else
+            card.FrontImagePath = fullPath;
 
         _logger.LogInformation("Downloaded → {File}", fileName);
     }
+
 
     private static string GetBestImageUrl(ImageUris u) =>
         u.Png

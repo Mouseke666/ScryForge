@@ -77,44 +77,88 @@ namespace ScryForge.Services
                 return false;
             }
 
-            int total = cards.Count;
-            int current = 0;
+            // Tel alle afbeeldingen van alle kaarten
+            int totalImages = cards.Sum(c =>
+                c.IsDoubleFaced && c.CardFaces != null && c.CardFaces.Count > 1 ? 2 : 1);
+
+            int currentImage = 0;
 
             foreach (var card in cards)
             {
-                current++;
-
-                if (string.IsNullOrWhiteSpace(card.ImagePath) || !File.Exists(card.ImagePath))
+                // Double-faced card
+                if (card.IsDoubleFaced && card.CardFaces != null && card.CardFaces.Count > 1)
                 {
-                    _logger.LogWarning(
-                        "Image not found for card {CardName}, skipping ([{Current}/{Total}]).",
-                        card.Name,
-                        current,
-                        total);
-                    continue;
+                    var images = new[] { card.FrontImagePath, card.BackImagePath };
+
+                    foreach (var (imagePath, faceName) in images.Select((p, i) => (p, i == 0 ? "Front" : "Back")))
+                    {
+                        if (string.IsNullOrWhiteSpace(imagePath) || !File.Exists(imagePath))
+                        {
+                            _logger.LogWarning(
+                                "Image not found for card {CardName} ({Face}), skipping ([{Current}/{Total}]).",
+                                card.Name,
+                                faceName,
+                                currentImage + 1,
+                                totalImages);
+                            continue;
+                        }
+
+                        currentImage++;
+                        _logger.LogInformation(
+                            "Upscaling [{Current}/{Total}] — {CardName} ({Face})",
+                            currentImage,
+                            totalImages,
+                            card.Name,
+                            faceName);
+
+                        try
+                        {
+                            await RunUpscalerForSingleImageAsync(imagePath, logOutput: false);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(
+                                ex,
+                                "Upscaling failed for [{Current}/{Total}] — {CardName} ({Face})",
+                                currentImage,
+                                totalImages,
+                                card.Name,
+                                faceName);
+                        }
+                    }
                 }
-
-                _logger.LogInformation(
-                    "Upscaling [{Current}/{Total}] — {CardName}",
-                    current,
-                    total,
-                    card.Name);
-
-                try
+                else // Normale kaart
                 {
-                    // Single-image upscaler, output suppressed
-                    await RunUpscalerForSingleImageAsync(
-                        card.ImagePath,
-                        logOutput: false);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(
-                        ex,
-                        "Upscaling failed for [{Current}/{Total}] — {CardName}",
-                        current,
-                        total,
+                    if (string.IsNullOrWhiteSpace(card.FrontImagePath) || !File.Exists(card.FrontImagePath))
+                    {
+                        _logger.LogWarning(
+                            "Image not found for card {CardName}, skipping ([{Current}/{Total}]).",
+                            card.Name,
+                            currentImage + 1,
+                            totalImages);
+                        continue;
+                    }
+
+                    currentImage++;
+                    _logger.LogInformation(
+                        "Upscaling [{Current}/{Total}] — {CardName}",
+                        currentImage,
+                        totalImages,
                         card.Name);
+
+                    try
+                    {
+                        await RunUpscalerForSingleImageAsync(card.FrontImagePath, logOutput: false);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(
+                            ex,
+                            "Upscaling failed for [{Current}/{Total}] — {CardName}",
+                            currentImage,
+                            totalImages,
+                            card.Name);
+                    }
                 }
             }
 

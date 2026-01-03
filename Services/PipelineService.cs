@@ -13,7 +13,7 @@ public class PipelineService : BackgroundService
     private readonly ICardParserService _parser;
     private readonly IDownloaderService _downloader;
     private readonly UpscalerService _upscaler;
-    private readonly ICardCopyService _flips;
+    private readonly ICardCopyService _cardCopy;
     private readonly IPDFService _pdf;
     private readonly PDFOpenService _openPdf;
     private readonly IEmptySlotsService _emptySlots;
@@ -27,7 +27,7 @@ public class PipelineService : BackgroundService
         ICardParserService parser,
         IDownloaderService downloader,
         UpscalerService upscaler,
-        ICardCopyService flips,
+        ICardCopyService cardCopy,
         IPDFService pdf,
         PDFOpenService openPdf,
         IEmptySlotsService emptySlots,
@@ -40,7 +40,7 @@ public class PipelineService : BackgroundService
         _parser = parser;
         _downloader = downloader;
         _upscaler = upscaler;
-        _flips = flips;
+        _cardCopy = cardCopy;
         _pdf = pdf;
         _openPdf = openPdf;
         _emptySlots = emptySlots;
@@ -166,14 +166,14 @@ public class PipelineService : BackgroundService
         LogStep(ref step, totalSteps, "Parsing Custom Cards");
         cards.AddRange(await _parser.ParseCustomCardsAsync(customCards));
 
-        LogStep(ref step, totalSteps, "Processing flip cards");
+        LogStep(ref step, totalSteps, "Processing cards");
         try
         {
-            _flips.ProcessCards(cards);
+            _cardCopy.ProcessCards(cards);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Processing flips failed");
+            _logger.LogError(ex, "Processing cards failed");
         }
 
         LogStep(ref step, totalSteps, "Generating main PDF");
