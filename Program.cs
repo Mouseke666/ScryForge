@@ -4,6 +4,9 @@ using Microsoft.Extensions.Logging;
 using ScryForge.Services.Intefaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using System;
+using ScryForge.Logging;
+using Microsoft.Extensions.Logging.Console;
 
 internal class Program
 {
@@ -11,6 +14,7 @@ internal class Program
     {
         var builder = Host.CreateApplicationBuilder(args);
 
+        // ---- Services ----
         builder.Services.AddSingleton<ICleanupService, CleanupService>();
         builder.Services.AddSingleton<OpenFolderService>();
         builder.Services.AddSingleton<ICardParserService, CardParserService>();
@@ -25,31 +29,34 @@ internal class Program
         builder.Services.AddSingleton<ICustomCardService, CustomCardService>();
         builder.Services.AddHostedService<PipelineService>();
 
+        // ---- HTTP Client ----
         builder.Services.AddHttpClient("Scryfall", client =>
         {
             client.BaseAddress = new Uri("https://api.scryfall.com/");
             client.Timeout = TimeSpan.FromMinutes(10);
         });
 
+        // ---- Clean Logging ----
         builder.Logging.ClearProviders();
-        builder.Logging.AddSimpleConsole(options =>
-        {
-            options.IncludeScopes = false;
-            options.SingleLine = true;
-            options.TimestampFormat = "HH:mm:ss ";
-            options.UseUtcTimestamp = false;
-        });
 
+        // Voeg onze custom formatter toe
+        builder.Logging.AddConsole(options =>
+        {
+            options.FormatterName = "clean";
+        });
+        builder.Logging.Services.AddSingleton<ConsoleFormatter, CleanConsoleFormatter>();
+
+        // Filter externe logging weg
         builder.Logging.AddFilter("System.Net.Http.HttpClient", LogLevel.Warning);
         builder.Logging.AddFilter("Microsoft.Hosting.Lifetime", LogLevel.None);
 
+        // ---- Configuration ----
         var configuration = new ConfigurationBuilder()
             .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
             .AddJsonFile("appsettings.json", optional: true)
             .Build();
 
         AppConfig.Initialize(configuration);
-
 
         await builder.Build().RunAsync();
     }
