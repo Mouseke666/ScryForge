@@ -41,7 +41,6 @@ jobs:
           $current = "${{ github.ref_name }}"
           $tags = git tag --list "v*" --sort=-v:refname
           $prev = $tags | Where-Object { $_ -ne $current } | Select-Object -First 1
-
           echo "PREV_TAG=$prev" >> $env:GITHUB_OUTPUT
 
       - name: Collect commits (feat, fix, perf)
@@ -49,13 +48,11 @@ jobs:
         shell: pwsh
         run: |
           $prevTag = "${{ steps.prev_tag.outputs.PREV_TAG }}"
-
           if ($prevTag) {
             $rawCommits = git log "$prevTag..HEAD" --pretty=format:"%s"
           } else {
             $rawCommits = git log HEAD --pretty=format:"%s"
           }
-
           $filtered = $rawCommits |
             ForEach-Object {
               $_ = $_.Trim()
@@ -65,11 +62,9 @@ jobs:
                 "- $($type): $msg"
               }
             }
-
           if (-not $filtered) {
             $filtered = "- No user-facing changes."
           }
-
           echo "COMMITS<<EOF" >> $env:GITHUB_OUTPUT
           $filtered | Out-String | ForEach-Object { $_.TrimEnd() } >> $env:GITHUB_OUTPUT
           echo "EOF" >> $env:GITHUB_OUTPUT
@@ -93,25 +88,21 @@ jobs:
             /p:InformationalVersion=$env:APP_VERSION `
             --output ./publish
 
-      - name: Compress build output into folder
+      - name: Prepare release folder
         shell: pwsh
         run: |
-          $zipName = "ScryForge_${{ github.ref_name }}.zip"
-          $tempDir = "$env:TEMP\ScryForgeZip"
-          
-          # Clean up temp folder if it exists
-          if (Test-Path $tempDir) { Remove-Item $tempDir -Recurse -Force }
-          New-Item -ItemType Directory -Path $tempDir | Out-Null
-          
-          # Copy all publish files into a subfolder inside temp
-          $destFolder = Join-Path $tempDir "ScryForge"
-          Copy-Item -Path "./publish/*" -Destination $destFolder -Recurse
-          
-          # Create the zip from the folder
-          Compress-Archive -Path "$tempDir\ScryForge" -DestinationPath $zipName -Force
-          
-          # Optional: remove temp folder
-          Remove-Item $tempDir -Recurse -Force
+          $releaseFolder = "./ScryForge_${{ github.ref_name }}"
+          New-Item -ItemType Directory -Path $releaseFolder -Force
+
+          # Copy all published files into release folder
+          Copy-Item -Path "./publish/*" -Destination $releaseFolder -Recurse -Force
+
+      - name: Compress release folder
+        shell: pwsh
+        run: |
+          $releaseFolder = "./ScryForge_${{ github.ref_name }}"
+          Compress-Archive -Path "$releaseFolder/*" `
+            -DestinationPath "ScryForge_${{ github.ref_name }}.zip" -Force
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
