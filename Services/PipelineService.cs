@@ -66,7 +66,7 @@ public class PipelineService(
 
         LogStep(ref step, totalSteps, "Cleaning working directories");
         await _cleanup.CleanDirectoryAsync(AppConfig.ScryForgeDownloaderPath);
-        await _cleanup.CleanDirectoryAsync(AppConfig.UpscaledFolder);
+        await _cleanup.CleanDirectoryAsync(AppConfig.PDFImagesFolder);
 
         LogStep(ref step, totalSteps, "Fetching Scryfall cards");
 
@@ -117,7 +117,7 @@ public class PipelineService(
         }
 
         LogStep(ref step, totalSteps, "Copy Custom Cards");
-        await _customCardService.CopyCustomCardsAsync(customCards, AppConfig.UpscaledFolder);
+        await _customCardService.CopyCustomCardsAsync(customCards, AppConfig.PDFImagesFolder);
 
         LogStep(ref step, totalSteps, "Parsing cards.txt");
         List<CardInfo> cards = [];
@@ -156,7 +156,7 @@ public class PipelineService(
         LogStep(ref step, totalSteps, "Cleaning upscaled folder (excluding flips)");
         try
         {
-            await _cleanup.CleanDirectoryAsync(AppConfig.UpscaledFolder, "flips");
+            await _cleanup.CleanDirectoryAsync(AppConfig.PDFImagesFolder, "flips");
         }
         catch (Exception ex)
         {

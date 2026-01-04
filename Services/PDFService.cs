@@ -128,7 +128,7 @@ namespace ScryForge.Services
             {
                 string flipsName = $"{baseName}_flips";
 
-                _copy.CopyFolderFiles(AppConfig.FlipsFolder, AppConfig.UpscaledFolder);
+                _copy.CopyFolderFiles(AppConfig.FlipsFolder, AppConfig.PDFImagesFolder);
 
                 await RunAsync("flips", flipsName, true);
 
@@ -139,7 +139,7 @@ namespace ScryForge.Services
                     Path.Combine(AppConfig.PdfPath, $"{flipsName}.pdf"),
                     Path.Combine(outputPath, $"{flipsName}.pdf"));
 
-                await _cleanup.CleanDirectoryAsync(AppConfig.UpscaledFolder);
+                await _cleanup.CleanDirectoryAsync(AppConfig.PDFImagesFolder);
             }
             catch (Exception ex)
             {

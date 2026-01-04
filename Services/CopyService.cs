@@ -50,7 +50,7 @@ namespace ScryForge.Services
 
         public void DuplicateCards(List<CardInfo> cards)
         {
-            string folder = AppConfig.UpscaledFolder;
+            string folder = AppConfig.PDFImagesFolder;
 
             foreach (var card in cards)
             {

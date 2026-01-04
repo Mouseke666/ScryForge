@@ -8,11 +8,11 @@ namespace ScryForge
         public static readonly string LogPath = Path.Combine(BasePath, "Log");
         public static readonly string ScryForgeDownloaderPath = Path.Combine(BasePath, "Download");
         public static readonly string CardsFile = Path.Combine(BasePath, "cards.txt");
-        public static readonly string PdfPath = Path.Combine(BasePath, "PDF");
         public static readonly string OutputFolder = Path.Combine(BasePath, "Output");
         public static readonly string CustomFolder = Path.Combine(BasePath, "Custom");
-        public static readonly string UpscaledFolder = Path.Combine(PdfPath, "images");
-        public static readonly string FlipsFolder = Path.Combine(UpscaledFolder, "flips");
+        public static readonly string PdfPath = Path.Combine(BasePath, "PDF");
+        public static readonly string PDFImagesFolder = Path.Combine(PdfPath, "images");
+        public static readonly string FlipsFolder = Path.Combine(PDFImagesFolder, "flips");
         public static readonly string UpscalerPath = Path.Combine(BasePath, "Upscaler");
         public static readonly string UpscalerExe = Path.Combine(UpscalerPath, "realesrgan-ncnn-vulkan.exe");
         public static readonly string PDFPath = Path.Combine(BasePath, "PDF");

@@ -19,7 +19,7 @@ namespace ScryForge.Services
                 return result;
             }
 
-            var folder = AppConfig.UpscaledFolder;
+            var folder = AppConfig.PDFImagesFolder;
             var lines = await File.ReadAllLinesAsync(filePath);
 
             var cardLineRegex = new Regex(

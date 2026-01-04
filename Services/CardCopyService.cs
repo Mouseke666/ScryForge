@@ -11,7 +11,7 @@ namespace ScryForge.Services
         public void ProcessCards(List<CardInfo> cards)
         {
             Directory.CreateDirectory(AppConfig.FlipsFolder);
-            Directory.CreateDirectory(AppConfig.UpscaledFolder);
+            Directory.CreateDirectory(AppConfig.PDFImagesFolder);
 
             var flipCards = cards.Where(c => c.IsFlip && !string.Equals(c.SetCode, "CUSTOM", StringComparison.OrdinalIgnoreCase));
             foreach (var card in flipCards)
@@ -28,8 +28,8 @@ namespace ScryForge.Services
 
         private void ProcessFlipCard(CardInfo card)
         {
-            string frontSource = Path.Combine(AppConfig.UpscaledFolder, card.FrontFileName);
-            string backSource = Path.Combine(AppConfig.UpscaledFolder, card.BackFileName);
+            string frontSource = Path.Combine(AppConfig.PDFImagesFolder, card.FrontFileName);
+            string backSource = Path.Combine(AppConfig.PDFImagesFolder, card.BackFileName);
 
             if (!File.Exists(frontSource) || !File.Exists(backSource))
             {
@@ -76,7 +76,7 @@ namespace ScryForge.Services
 
         private void ProcessSingleCard(CardInfo card)
         {
-            string sourceFile = Path.Combine(AppConfig.UpscaledFolder, card.FrontFileName);
+            string sourceFile = Path.Combine(AppConfig.PDFImagesFolder, card.FrontFileName);
             if (!File.Exists(sourceFile))
             {
                 _logger.LogWarning("Single-sided card file not found for: {Name}", card.Name);
@@ -91,7 +91,7 @@ namespace ScryForge.Services
                 for (int i = 1; i <= card.Quantity; i++)
                 {
                     string dest = Path.Combine(
-                        AppConfig.UpscaledFolder,
+                        AppConfig.PDFImagesFolder,
                         card.Quantity > 1
                             ? $"{baseName} - {i}{extension}"
                             : $"{baseName}{extension}"

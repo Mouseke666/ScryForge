@@ -91,10 +91,10 @@ namespace ScryForge.Services
                 return false;
             }
 
-            Directory.CreateDirectory(AppConfig.UpscaledFolder);
+            Directory.CreateDirectory(AppConfig.PDFImagesFolder);
 
             var outputFile = Path.Combine(
-                AppConfig.UpscaledFolder,
+                AppConfig.PDFImagesFolder,
                 Path.GetFileName(imagePath));
 
             if (File.Exists(outputFile))
