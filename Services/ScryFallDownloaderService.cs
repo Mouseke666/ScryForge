@@ -1,27 +1,26 @@
 using System.Net;
-using ScryForge.Models;
 using System.Text.Json;
 using ScryForge.Serialization;
+using ScryForge.Models.Scryfall;
 using Microsoft.Extensions.Logging;
 using ScryForge.Services.Intefaces;
 using System.Text.RegularExpressions;
-using System.Threading;
 
 namespace ScryForge.Services;
 
-public class DownloaderService : IDownloaderService
+public class ScryFallDownloaderService : IDownloaderService
 {
     private readonly HttpClient _http;
-    private readonly ILogger<DownloaderService> _logger;
+    private readonly ILogger<ScryFallDownloaderService> _logger;
     private readonly string _outputFolder;
     private readonly int _maxConcurrentDownloads = 10;
 
     private int _downloadedCount = 0;
     private int _totalCount = 0;
 
-    public DownloaderService(
+    public ScryFallDownloaderService(
         IHttpClientFactory httpClientFactory,
-        ILogger<DownloaderService> logger)
+        ILogger<ScryFallDownloaderService> logger)
     {
         _logger = logger;
 
@@ -32,7 +31,7 @@ public class DownloaderService : IDownloaderService
         Directory.CreateDirectory(_outputFolder);
     }
 
-    public async Task<IReadOnlyList<ScryfallCard>> FetchScryfallCardsAsync(CancellationToken ct = default)
+    public async Task<IReadOnlyList<ScryfallCard>> FetchCardsAsync(CancellationToken ct = default)
     {
         var cardsFile = Path.Combine(AppConfig.BasePath, "cards.txt");
 

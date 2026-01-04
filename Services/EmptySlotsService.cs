@@ -1,4 +1,5 @@
 using ScryForge.Models;
+using ScryForge.Models.Scryfall;
 using Microsoft.Extensions.Logging;
 using ScryForge.Services.Intefaces;
 

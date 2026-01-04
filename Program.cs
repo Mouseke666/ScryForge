@@ -18,7 +18,7 @@ internal class Program
         builder.Services.AddSingleton<ICleanupService, CleanupService>();
         builder.Services.AddSingleton<OpenFolderService>();
         builder.Services.AddSingleton<ICardParserService, CardParserService>();
-        builder.Services.AddSingleton<IDownloaderService, DownloaderService>();
+        builder.Services.AddSingleton<IDownloaderService, ScryFallDownloaderService>();
         builder.Services.AddSingleton<UpscalerService>();
         builder.Services.AddSingleton<ICopyService, CopyService>();
         builder.Services.AddSingleton<ICardCopyService, CardCopyService>();

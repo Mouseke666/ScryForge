@@ -1,5 +1,5 @@
-using ScryForge.Models;
 using System.Diagnostics;
+using ScryForge.Models.Scryfall;
 using Microsoft.Extensions.Logging;
 
 namespace ScryForge.Services

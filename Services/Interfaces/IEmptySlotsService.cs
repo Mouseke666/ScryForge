@@ -1,4 +1,5 @@
 using ScryForge.Models;
+using ScryForge.Models.Scryfall;
 
 namespace ScryForge.Services.Intefaces
 {

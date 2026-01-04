@@ -1,4 +1,4 @@
-using ScryForge.Models;
+using ScryForge.Models.Scryfall;
 using System.Text.Json.Serialization;
 
 namespace ScryForge.Serialization

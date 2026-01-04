@@ -1,4 +1,5 @@
 using ScryForge.Models;
+using ScryForge.Models.Scryfall;
 using ScryForge.Services.Intefaces;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -88,7 +89,7 @@ public class PipelineService : BackgroundService
         List<ScryfallCard> scryfallCards;
         try
         {
-            scryfallCards = (await _downloader.FetchScryfallCardsAsync()).ToList();
+            scryfallCards = (await _downloader.FetchCardsAsync()).ToList();
         }
         catch (Exception ex)
         {
