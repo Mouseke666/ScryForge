@@ -10,7 +10,7 @@ public class PipelineService : BackgroundService
 {
     private readonly ILogger<PipelineService> _logger;
     private readonly ICleanupService _cleanup;
-    private readonly OpenFolderService _openfolder;
+    private readonly IOpenFolderService _openfolder;
     private readonly ICardParserService _parser;
     private readonly IDownloaderService _downloader;
     private readonly UpscalerService _upscaler;
@@ -24,7 +24,7 @@ public class PipelineService : BackgroundService
     public PipelineService(
         ILogger<PipelineService> logger,
         ICleanupService cleanup,
-        OpenFolderService openfolder,
+        IOpenFolderService openfolder,
         ICardParserService parser,
         IDownloaderService downloader,
         UpscalerService upscaler,

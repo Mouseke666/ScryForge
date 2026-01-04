@@ -1,16 +1,12 @@
 using System.Diagnostics;
 using Microsoft.Extensions.Logging;
+using ScryForge.Services.Intefaces;
 
 namespace ScryForge.Services
 {
-    public class OpenFolderService
+    public class OpenFolderService(ILogger<OpenFolderService> logger) : IOpenFolderService
     {
-        private readonly ILogger<OpenFolderService> _logger;
-
-        public OpenFolderService(ILogger<OpenFolderService> logger)
-        {
-            _logger = logger;
-        }
+        private readonly ILogger<OpenFolderService> _logger = logger;
 
         public void OpenFolder(string? path = null)
         {
