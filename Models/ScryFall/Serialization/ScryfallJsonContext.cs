@@ -1,7 +1,6 @@
-using ScryForge.Models.Scryfall;
 using System.Text.Json.Serialization;
 
-namespace ScryForge.Serialization
+namespace ScryForge.Models.Scryfall.Serialization
 {
     [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
     [JsonSerializable(typeof(ScryfallCard))]
