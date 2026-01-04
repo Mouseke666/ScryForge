@@ -1,7 +1,7 @@
 using ScryForge.Models;
 using ScryForge.Models.Scryfall;
 
-namespace ScryForge.Services.Intefaces
+namespace ScryForge.Services.Interfaces
 {
     public interface IEmptySlotsService
     {

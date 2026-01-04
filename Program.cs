@@ -1,12 +1,11 @@
 ﻿using ScryForge.Services;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using ScryForge.Services.Intefaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using System;
 using ScryForge.Logging;
 using Microsoft.Extensions.Logging.Console;
+using ScryForge.Services.Interfaces;
 
 internal class Program
 {
@@ -19,7 +18,7 @@ internal class Program
         builder.Services.AddSingleton<IOpenFolderService, OpenFolderService>();
         builder.Services.AddSingleton<ICardParserService, CardParserService>();
         builder.Services.AddSingleton<IDownloaderService, ScryFallDownloaderService>();
-        builder.Services.AddSingleton<UpscalerService>();
+        builder.Services.AddSingleton<IUpscalerService, UpscalerService>();
         builder.Services.AddSingleton<ICopyService, CopyService>();
         builder.Services.AddSingleton<ICardCopyService, CardCopyService>();
         builder.Services.AddSingleton<IPDFService, PDFService>();

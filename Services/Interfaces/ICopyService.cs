@@ -1,6 +1,6 @@
 using ScryForge.Models;
 
-namespace ScryForge.Services
+namespace ScryForge.Services.Interfaces
 {
     public interface ICopyService
     {

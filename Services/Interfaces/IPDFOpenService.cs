@@ -1,4 +1,4 @@
-namespace ScryForge.Services.Intefaces
+namespace ScryForge.Services.Interfaces
 {
     public interface IPDFOpenService
     {

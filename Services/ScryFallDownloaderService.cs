@@ -2,9 +2,9 @@ using System.Net;
 using System.Text.Json;
 using ScryForge.Models.Scryfall;
 using Microsoft.Extensions.Logging;
-using ScryForge.Services.Intefaces;
 using System.Text.RegularExpressions;
 using ScryForge.Models.Scryfall.Serialization;
+using ScryForge.Services.Interfaces;
 
 namespace ScryForge.Services;
 

@@ -1,75 +1,13 @@
 using System.Diagnostics;
 using ScryForge.Models.Scryfall;
 using Microsoft.Extensions.Logging;
+using ScryForge.Services.Interfaces;
 
 namespace ScryForge.Services
 {
-    public class UpscalerService
+    public class UpscalerService(ILogger<UpscalerService> logger) : IUpscalerService
     {
-        private readonly ILogger<UpscalerService> _logger;
-
-        public UpscalerService(ILogger<UpscalerService> logger)
-        {
-            _logger = logger;
-        }
-
-        // public async Task RunUpscalerAsync(bool logOutput, string imageSource)
-        // {
-        //     var exe = AppConfig.UpscalerExe;
-        //     if (string.IsNullOrWhiteSpace(exe) || !File.Exists(exe))
-        //     {
-        //         _logger.LogError("Upscaler executable not found: {ExePath}", exe);
-        //         return;
-        //     }
-
-        //     var args =
-        //         $"-i \"{imageSource}\" " +
-        //         $"-o \"{AppConfig.UpscaledFolder}\" " +
-        //         $"-n {AppConfig.UpscaleModel} " +
-        //         $"-s {AppConfig.UpscaleScale}" +
-        //         (logOutput ? " -v" : string.Empty);
-
-        //     var psi = new ProcessStartInfo
-        //     {
-        //         FileName = exe,
-        //         Arguments = args,
-        //         WorkingDirectory = Path.GetDirectoryName(exe)!,
-        //         UseShellExecute = false,
-        //         CreateNoWindow = true,
-        //         RedirectStandardOutput = logOutput,
-        //         RedirectStandardError = logOutput
-        //     };
-
-        //     try
-        //     {
-        //         using var process = new Process { StartInfo = psi };
-        //         process.Start();
-
-        //         Task stdoutTask = logOutput
-        //             ? ReadStdOutAsync(process)
-        //             : Task.CompletedTask;
-
-        //         Task stderrTask = logOutput
-        //             ? ReadStdErrAsync(process)
-        //             : Task.CompletedTask;
-
-        //         await process.WaitForExitAsync();
-        //         await Task.WhenAll(stdoutTask, stderrTask);
-
-        //         if (process.ExitCode != 0)
-        //         {
-        //             _logger.LogError(
-        //                 "Upscaler exited with error code {ExitCode}",
-        //                 process.ExitCode);
-        //         }
-        //     }
-        //     catch (Exception ex)
-        //     {
-        //         _logger.LogError(ex, "Unexpected error during upscaling");
-        //     }
-        // }
-
-        //private readonly int _maxConcurrentUpscales = 10; // 4 processen tegelijk, pas aan op CPU/RAM
+        private readonly ILogger<UpscalerService> _logger = logger;
 
         public async Task<bool> RunUpscalerForCardsAsync(IReadOnlyList<ScryfallCard> cards)
         {
@@ -79,7 +17,6 @@ namespace ScryForge.Services
                 return false;
             }
 
-            // Tel alle afbeeldingen van alle kaarten
             var allImages = cards.SelectMany(c =>
             {
                 if (c.IsDoubleFaced && c.CardFaces != null && c.CardFaces.Count > 1)
@@ -137,8 +74,7 @@ namespace ScryForge.Services
             return true;
         }
 
-        // Single-image upscaling (stil by default)
-        public async Task<bool> RunUpscalerForSingleImageAsync(
+        private async Task<bool> RunUpscalerForSingleImageAsync(
             string imagePath,
             bool logOutput = false)
         {

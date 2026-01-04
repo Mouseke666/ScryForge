@@ -1,6 +1,6 @@
 using ScryForge.Models;
 using Microsoft.Extensions.Logging;
-using ScryForge.Services.Intefaces;
+using ScryForge.Services.Interfaces;
 
 namespace ScryForge.Services
 {

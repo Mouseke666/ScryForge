@@ -1,7 +1,7 @@
 using ScryForge.Models;
-using ScryForge.Services.Intefaces;
 using Microsoft.Extensions.Logging;
 using System.Text.RegularExpressions;
+using ScryForge.Services.Interfaces;
 
 namespace ScryForge.Services
 {

@@ -2,7 +2,7 @@ using System.Diagnostics;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using ScryForge.Models;
-using ScryForge.Services.Intefaces;
+using ScryForge.Services.Interfaces;
 
 namespace ScryForge.Services
 {

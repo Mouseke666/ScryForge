@@ -1,8 +1,8 @@
 using ScryForge.Models;
 using ScryForge.Models.Scryfall;
-using ScryForge.Services.Intefaces;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using ScryForge.Services.Interfaces;
 
 namespace ScryForge.Services;
 
@@ -13,7 +13,7 @@ public class PipelineService : BackgroundService
     private readonly IOpenFolderService _openfolder;
     private readonly ICardParserService _parser;
     private readonly IDownloaderService _downloader;
-    private readonly UpscalerService _upscaler;
+    private readonly IUpscalerService _upscaler;
     private readonly ICardCopyService _cardCopy;
     private readonly IPDFService _pdf;
     private readonly IPDFOpenService _openPdf;
@@ -27,7 +27,7 @@ public class PipelineService : BackgroundService
         IOpenFolderService openfolder,
         ICardParserService parser,
         IDownloaderService downloader,
-        UpscalerService upscaler,
+        IUpscalerService upscaler,
         ICardCopyService cardCopy,
         IPDFService pdf,
         IPDFOpenService openPdf,
