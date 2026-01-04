@@ -14,6 +14,8 @@ internal class Program
     {
         var builder = Host.CreateApplicationBuilder(args);
 
+        builder.Services.AddSingleton<System.IO.Abstractions.IFileSystem, System.IO.Abstractions.FileSystem>();
+
         builder.Services.AddSingleton<ICleanupService, CleanupService>();
         builder.Services.AddSingleton<IOpenFolderService, OpenFolderService>();
         builder.Services.AddSingleton<ICardParserService, CardParserService>();
