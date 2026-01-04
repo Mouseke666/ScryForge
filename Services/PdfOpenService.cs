@@ -1,16 +1,12 @@
 using System.Diagnostics;
 using Microsoft.Extensions.Logging;
+using ScryForge.Services.Intefaces;
 
 namespace ScryForge.Services
 {
-    public class PDFOpenService
+    public class PDFOpenService(ILogger<PDFOpenService> logger) : IPDFOpenService
     {
-        private readonly ILogger<PDFOpenService> _logger;
-
-        public PDFOpenService(ILogger<PDFOpenService> logger)
-        {
-            _logger = logger;
-        }
+        private readonly ILogger<PDFOpenService> _logger = logger;
 
         public void OpenPdf(string pdfPath)
         {

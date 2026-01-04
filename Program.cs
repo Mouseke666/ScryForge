@@ -23,7 +23,7 @@ internal class Program
         builder.Services.AddSingleton<ICopyService, CopyService>();
         builder.Services.AddSingleton<ICardCopyService, CardCopyService>();
         builder.Services.AddSingleton<IPDFService, PDFService>();
-        builder.Services.AddSingleton<PDFOpenService>();
+        builder.Services.AddSingleton<IPDFOpenService, PDFOpenService>();
         builder.Services.AddSingleton<IEmptySlotsService, EmptySlotsService>();
         builder.Services.AddSingleton<IPDFNameService, PDFNameService>();
         builder.Services.AddSingleton<ICustomCardService, CustomCardService>();

@@ -16,7 +16,7 @@ public class PipelineService : BackgroundService
     private readonly UpscalerService _upscaler;
     private readonly ICardCopyService _cardCopy;
     private readonly IPDFService _pdf;
-    private readonly PDFOpenService _openPdf;
+    private readonly IPDFOpenService _openPdf;
     private readonly IEmptySlotsService _emptySlots;
     private readonly IPDFNameService _pdfNameService;
     private readonly ICustomCardService _customCardService;
@@ -30,7 +30,7 @@ public class PipelineService : BackgroundService
         UpscalerService upscaler,
         ICardCopyService cardCopy,
         IPDFService pdf,
-        PDFOpenService openPdf,
+        IPDFOpenService openPdf,
         IEmptySlotsService emptySlots,
         IPDFNameService pdfNameService,
         ICustomCardService customCardService)
