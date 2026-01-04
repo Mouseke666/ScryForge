@@ -30,7 +30,7 @@ namespace ScryForge.Services
             }
 
             _logger.LogInformation("Suggested PDF name: {Name}", suggestedName);
-            _logger.LogInformation("Enter PDF name (press Enter to accept suggested name):");
+            _logger.LogInformation("[Action Required] Enter PDF name (press Enter to accept suggested name):");
 
             Console.Write("> ");
             string? input = Console.ReadLine();

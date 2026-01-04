@@ -54,7 +54,7 @@ public class PipelineService(
 
     private void LogStep(ref int step, int total, string message)
     {
-        _logger.LogInformation("Step {Step}/{Total} – {Message}", step++, total, message);
+        _logger.LogInformation("Step {Step}/{Total}: {Message}", step++, total, message);
     }
 
     private async Task RunPipelineAsync(CancellationToken ct)
@@ -63,6 +63,8 @@ public class PipelineService(
 
         int step = 1;
         int totalSteps = 14;
+
+        _logger.LogInformation("=== Step 1-3: Setup ===");
 
         LogStep(ref step, totalSteps, "Cleaning working directories");
         await _cleanup.CleanDirectoryAsync(AppConfig.ScryForgeDownloaderPath);
@@ -97,6 +99,8 @@ public class PipelineService(
             return;
         }
 
+        _logger.LogInformation("=== Step 4-6: PDF Preparation ===");
+
         LogStep(ref step, totalSteps, "Determining PDF name");
         var pdfNameResult = await _pdfNameService.DeterminePdfNameAsync(AppConfig.CardsFile);
 
@@ -115,6 +119,8 @@ public class PipelineService(
         {
             return;
         }
+
+        _logger.LogInformation("=== Step 7-10: Custom Cards and Parsing ===");
 
         LogStep(ref step, totalSteps, "Copy Custom Cards");
         await _customCardService.CopyCustomCardsAsync(customCards, AppConfig.PDFImagesFolder);
@@ -142,6 +148,8 @@ public class PipelineService(
         {
             _logger.LogError(ex, "Processing cards failed");
         }
+
+        _logger.LogInformation("=== Step 11-14: PDF Generation and Cleanup ===");
 
         LogStep(ref step, totalSteps, "Generating main PDF");
         try
@@ -186,7 +194,8 @@ public class PipelineService(
         _logger.LogInformation("Pipeline finished");
         _logger.LogInformation("Thank you for using ScryForge!");
 
-        Console.WriteLine("Press any key to exit...");
+        Console.WriteLine("[Action Required] Press any key to exit...");
+        Console.Write("> ");
         _ = Console.ReadLine();
         Environment.Exit(0);
     }

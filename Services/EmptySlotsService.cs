@@ -62,7 +62,7 @@ namespace ScryForge.Services
             }
 
             _logger.LogInformation(
-                "Do you want to fill these empty slots? Press Enter to continue, or type 'Q' to quit.");
+                "[Action Required] Do you want to fill these empty slots? Press Enter to continue, or type 'Q' to quit.");
 
             Console.Write("> ");
             string? input = Console.ReadLine();
