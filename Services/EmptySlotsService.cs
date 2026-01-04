@@ -5,16 +5,10 @@ using ScryForge.Services.Interfaces;
 
 namespace ScryForge.Services
 {
-    public class EmptySlotsService : IEmptySlotsService
+    public class EmptySlotsService(IPDFService pdf, ILogger<EmptySlotsService> logger) : IEmptySlotsService
     {
-        private readonly IPDFService _pdf;
-        private readonly ILogger<EmptySlotsService> _logger;
-
-        public EmptySlotsService(IPDFService pdf, ILogger<EmptySlotsService> logger)
-        {
-            _pdf = pdf;
-            _logger = logger;
-        }
+        private readonly IPDFService _pdf = pdf;
+        private readonly ILogger<EmptySlotsService> _logger = logger;
 
         public async Task<EmptySlotsResult> AnalyzeAsync(IReadOnlyList<ScryfallCard> cards, IReadOnlyList<CustomCard> customCards, CancellationToken ct)
         {
@@ -93,6 +87,5 @@ namespace ScryForge.Services
             int remaining = cardCount % slotsPerPage;
             return remaining > 0 ? slotsPerPage - remaining : 0;
         }
-
     }
 }

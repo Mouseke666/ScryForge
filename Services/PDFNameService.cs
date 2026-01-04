@@ -4,16 +4,10 @@ using ScryForge.Services.Interfaces;
 
 namespace ScryForge.Services
 {
-    public class PDFNameService : IPDFNameService
+    public class PDFNameService(ICardParserService parser, ILogger<PDFNameService> logger) : IPDFNameService
     {
-        private readonly ICardParserService _parser;
-        private readonly ILogger<PDFNameService> _logger;
-
-        public PDFNameService(ICardParserService parser, ILogger<PDFNameService> logger)
-        {
-            _parser = parser;
-            _logger = logger;
-        }
+        private readonly ICardParserService _parser = parser;
+        private readonly ILogger<PDFNameService> _logger = logger;
 
         public async Task<PdfNameResult> DeterminePdfNameAsync(string cardsFilePath)
         {

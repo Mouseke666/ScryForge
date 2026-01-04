@@ -4,28 +4,21 @@ using ScryForge.Services.Interfaces;
 
 namespace ScryForge.Services
 {
-    public class CardCopyService : ICardCopyService
+    public class CardCopyService(ILogger<CardCopyService> logger) : ICardCopyService
     {
-        private readonly ILogger<CardCopyService> _logger;
-
-        public CardCopyService(ILogger<CardCopyService> logger)
-        {
-            _logger = logger;
-        }
+        private readonly ILogger<CardCopyService> _logger = logger;
 
         public void ProcessCards(List<CardInfo> cards)
         {
             Directory.CreateDirectory(AppConfig.FlipsFolder);
-            Directory.CreateDirectory(AppConfig.UpscaledFolder); // voor single-sided copies
+            Directory.CreateDirectory(AppConfig.UpscaledFolder);
 
-            // 🔹 Flip cards
             var flipCards = cards.Where(c => c.IsFlip && !string.Equals(c.SetCode, "CUSTOM", StringComparison.OrdinalIgnoreCase));
             foreach (var card in flipCards)
             {
                 ProcessFlipCard(card);
             }
 
-            // 🔹 Single-sided cards (Quantity > 1)
             var singleCards = cards.Where(c => !c.IsFlip && !string.Equals(c.SetCode, "CUSTOM", StringComparison.OrdinalIgnoreCase) && c.Quantity > 1);
             foreach (var card in singleCards)
             {
@@ -46,24 +39,23 @@ namespace ScryForge.Services
 
             try
             {
-                // Verwijder eventueel "_front" uit de basisnaam
                 string baseFrontName = Path.GetFileNameWithoutExtension(card.FrontFileName);
                 if (baseFrontName.EndsWith("_front", StringComparison.OrdinalIgnoreCase))
-                    baseFrontName = baseFrontName[..^6]; // "_front" is 6 tekens
+                {
+                    baseFrontName = baseFrontName[..^6];
+                }
 
                 string extension = Path.GetExtension(card.FrontFileName);
 
                 for (int i = 1; i <= card.Quantity; i++)
                 {
-                    string frontDest = Path.Combine(
-                        AppConfig.FlipsFolder,
+                    string frontDest = Path.Combine(AppConfig.FlipsFolder,
                         card.Quantity > 1
                             ? $"{baseFrontName} - {i}{extension}"
                             : $"{baseFrontName}{extension}"
                     );
 
-                    string backDest = Path.Combine(
-                        AppConfig.FlipsFolder,
+                    string backDest = Path.Combine(AppConfig.FlipsFolder,
                         card.Quantity > 1
                             ? $"__back_{baseFrontName} - {i}{extension}"
                             : $"__back_{baseFrontName}{extension}"
@@ -108,9 +100,10 @@ namespace ScryForge.Services
                     File.Copy(sourceFile, dest, true);
                 }
 
-                // verwijder originele file als er kopieën zijn gemaakt
                 if (card.Quantity > 1)
+                {
                     File.Delete(sourceFile);
+                }
             }
             catch (Exception ex)
             {

@@ -4,14 +4,9 @@ using ScryForge.Services.Interfaces;
 
 namespace ScryForge.Services;
 
-public class CustomCardService : ICustomCardService
+public class CustomCardService(ILogger<CustomCardService> logger) : ICustomCardService
 {
-    private readonly ILogger<CustomCardService> _logger;
-
-    public CustomCardService(ILogger<CustomCardService> logger)
-    {
-        _logger = logger;
-    }
+    private readonly ILogger<CustomCardService> _logger = logger;
 
     public Task<IReadOnlyList<CustomCard>> FetchCustomCardsAsync(string customFolder)
     {
@@ -122,5 +117,4 @@ public class CustomCardService : ICustomCardService
 
         return Task.CompletedTask;
     }
-
 }

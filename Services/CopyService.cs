@@ -4,14 +4,9 @@ using ScryForge.Services.Interfaces;
 
 namespace ScryForge.Services
 {
-    public class CopyService : ICopyService
+    public class CopyService(ILogger<CopyService> logger) : ICopyService
     {
-        private readonly ILogger<CopyService> _logger;
-
-        public CopyService(ILogger<CopyService> logger)
-        {
-            _logger = logger;
-        }
+        private readonly ILogger<CopyService> _logger = logger;
 
         public void CopyFilesToRoot(string path)
         {

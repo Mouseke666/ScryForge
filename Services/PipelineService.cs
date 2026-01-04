@@ -6,48 +6,32 @@ using ScryForge.Services.Interfaces;
 
 namespace ScryForge.Services;
 
-public class PipelineService : BackgroundService
+public class PipelineService(
+    ILogger<PipelineService> logger,
+    ICleanupService cleanup,
+    IOpenFolderService openfolder,
+    ICardParserService parser,
+    IDownloaderService downloader,
+    IUpscalerService upscaler,
+    ICardCopyService cardCopy,
+    IPDFService pdf,
+    IPDFOpenService openPdf,
+    IEmptySlotsService emptySlots,
+    IPDFNameService pdfNameService,
+    ICustomCardService customCardService) : BackgroundService
 {
-    private readonly ILogger<PipelineService> _logger;
-    private readonly ICleanupService _cleanup;
-    private readonly IOpenFolderService _openfolder;
-    private readonly ICardParserService _parser;
-    private readonly IDownloaderService _downloader;
-    private readonly IUpscalerService _upscaler;
-    private readonly ICardCopyService _cardCopy;
-    private readonly IPDFService _pdf;
-    private readonly IPDFOpenService _openPdf;
-    private readonly IEmptySlotsService _emptySlots;
-    private readonly IPDFNameService _pdfNameService;
-    private readonly ICustomCardService _customCardService;
-
-    public PipelineService(
-        ILogger<PipelineService> logger,
-        ICleanupService cleanup,
-        IOpenFolderService openfolder,
-        ICardParserService parser,
-        IDownloaderService downloader,
-        IUpscalerService upscaler,
-        ICardCopyService cardCopy,
-        IPDFService pdf,
-        IPDFOpenService openPdf,
-        IEmptySlotsService emptySlots,
-        IPDFNameService pdfNameService,
-        ICustomCardService customCardService)
-    {
-        _logger = logger;
-        _cleanup = cleanup;
-        _openfolder = openfolder;
-        _parser = parser;
-        _downloader = downloader;
-        _upscaler = upscaler;
-        _cardCopy = cardCopy;
-        _pdf = pdf;
-        _openPdf = openPdf;
-        _emptySlots = emptySlots;
-        _pdfNameService = pdfNameService;
-        _customCardService = customCardService;
-    }
+    private readonly ILogger<PipelineService> _logger = logger;
+    private readonly ICleanupService _cleanup = cleanup;
+    private readonly IOpenFolderService _openfolder = openfolder;
+    private readonly ICardParserService _parser = parser;
+    private readonly IDownloaderService _downloader = downloader;
+    private readonly IUpscalerService _upscaler = upscaler;
+    private readonly ICardCopyService _cardCopy = cardCopy;
+    private readonly IPDFService _pdf = pdf;
+    private readonly IPDFOpenService _openPdf = openPdf;
+    private readonly IEmptySlotsService _emptySlots = emptySlots;
+    private readonly IPDFNameService _pdfNameService = pdfNameService;
+    private readonly ICustomCardService _customCardService = customCardService;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -126,24 +110,6 @@ public class PipelineService : BackgroundService
             _logger.LogError(ex, "Downloading images failed");
         }
 
-        // LogStep(ref step, totalSteps, "Upscaling images");
-
-        // if (scryfallCards != null && scryfallCards.Count > 0)
-        // {
-        //     try
-        //     {
-        //         await _upscaler.RunUpscalerAsync(true, AppConfig.ScryForgeDownloaderPath);
-        //     }
-        //     catch (Exception ex)
-        //     {
-        //         _logger.LogError(ex, "Upscaling step failed");
-        //     }
-        // }
-        // else
-        // {
-        //     _logger.LogInformation("No Scryfall cards to upscale, skipping this step.");
-        // }
-
         LogStep(ref step, totalSteps, "Upscaling images");
         if (!await _upscaler.RunUpscalerForCardsAsync(scryfallCards))
         {
@@ -154,7 +120,7 @@ public class PipelineService : BackgroundService
         await _customCardService.CopyCustomCardsAsync(customCards, AppConfig.UpscaledFolder);
 
         LogStep(ref step, totalSteps, "Parsing cards.txt");
-        List<CardInfo> cards = new();
+        List<CardInfo> cards = [];
         try
         {
             cards = await _parser.ParseCardsAsync(AppConfig.CardsFile);

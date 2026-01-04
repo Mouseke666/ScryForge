@@ -2,9 +2,9 @@ using System.Net;
 using System.Text.Json;
 using ScryForge.Models.Scryfall;
 using Microsoft.Extensions.Logging;
+using ScryForge.Services.Interfaces;
 using System.Text.RegularExpressions;
 using ScryForge.Models.Scryfall.Serialization;
-using ScryForge.Services.Interfaces;
 
 namespace ScryForge.Services;
 
@@ -38,7 +38,7 @@ public class ScryFallDownloaderService : IDownloaderService
         if (!File.Exists(cardsFile))
         {
             _logger.LogError("cards.txt not found at: {Path}", cardsFile);
-            return Array.Empty<ScryfallCard>();
+            return [];
         }
 
         string[] lines = await File.ReadAllLinesAsync(cardsFile, ct);
@@ -90,7 +90,6 @@ public class ScryFallDownloaderService : IDownloaderService
             return;
         }
 
-        // Bereken totaal aantal afbeeldingen (front + back)
         _totalCount = cards.Sum(c =>
             (c.ImageUris != null ? 1 : 0) +
             (c.CardFaces?.Count(cf => cf.ImageUris != null) ?? 0)

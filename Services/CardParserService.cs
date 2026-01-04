@@ -1,18 +1,13 @@
 using ScryForge.Models;
 using Microsoft.Extensions.Logging;
-using System.Text.RegularExpressions;
 using ScryForge.Services.Interfaces;
+using System.Text.RegularExpressions;
 
 namespace ScryForge.Services
 {
-    public class CardParserService : ICardParserService
+    public class CardParserService(ILogger<CardParserService> logger) : ICardParserService
     {
-        private readonly ILogger<CardParserService> _logger;
-
-        public CardParserService(ILogger<CardParserService> logger)
-        {
-            _logger = logger;
-        }
+        private readonly ILogger<CardParserService> _logger = logger;
 
         public async Task<List<CardInfo>> ParseCardsAsync(string filePath)
         {
@@ -38,7 +33,9 @@ namespace ScryForge.Services
             {
                 var line = Regex.Replace(rawLine, @"\*F\*\s*$", "", RegexOptions.IgnoreCase).Trim();
                 if (string.IsNullOrWhiteSpace(line))
+                {
                     continue;
+                }
 
                 var match = cardLineRegex.Match(line);
                 if (!match.Success)
@@ -67,13 +64,15 @@ namespace ScryForge.Services
                 var (fullName, setCode, number) = entry.Key;
                 var quantity = entry.Value;
 
-                List<string> files = new();
+                List<string> files = [];
 
                 foreach (var cn in GetCollectorNumberVariants(number))
                 {
                     files = FindFiles(folder, setCode, cn);
                     if (files.Count > 0)
+                    {
                         break;
+                    }
                 }
 
                 if (files.Count == 2)
@@ -119,7 +118,7 @@ namespace ScryForge.Services
                 yield return number[..^1];
         }
 
-        private async Task AddCardCopiesAsync(
+        private static async Task AddCardCopiesAsync(
             List<CardInfo> cards,
             string baseFile,
             string fullName,
@@ -146,7 +145,7 @@ namespace ScryForge.Services
         private static List<string> FindFiles(string folder, string setCode, string number)
         {
             if (!Directory.Exists(folder))
-                return new List<string>();
+                return [];
 
             var pattern = $@"(?<![A-Za-z0-9]){Regex.Escape(setCode)}[_-]{Regex.Escape(number)}(?![A-Za-z0-9])";
 
@@ -189,7 +188,9 @@ namespace ScryForge.Services
         {
             var cards = new List<CardInfo>();
             if (customCards == null || customCards.Count == 0)
+            {
                 return cards;
+            }
 
             foreach (var custom in customCards)
             {

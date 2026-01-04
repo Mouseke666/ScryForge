@@ -1,23 +1,16 @@
-using System.Diagnostics;
 using System.Text.Json;
-using Microsoft.Extensions.Logging;
 using ScryForge.Models;
+using System.Diagnostics;
+using Microsoft.Extensions.Logging;
 using ScryForge.Services.Interfaces;
 
 namespace ScryForge.Services
 {
-    public class PDFService : IPDFService
+    public class PDFService(ILogger<PDFService> logger, ICopyService copy, ICleanupService cleanup) : IPDFService
     {
-        private readonly ILogger<PDFService> _logger;
-        private readonly ICopyService _copy;
-        private readonly ICleanupService _cleanup;
-
-        public PDFService(ILogger<PDFService> logger, ICopyService copy, ICleanupService cleanup)
-        {
-            _logger = logger;
-            _copy = copy;
-            _cleanup = cleanup;
-        }
+        private readonly ILogger<PDFService> _logger = logger;
+        private readonly ICopyService _copy = copy;
+        private readonly ICleanupService _cleanup = cleanup;
 
         public async Task RunAsync(string project, string pdfFileName, bool showOutput = true)
         {
@@ -125,7 +118,7 @@ namespace ScryForge.Services
         public async Task GenerateFlipsPdfAsync(string baseName)
         {
             if (!Directory.Exists(AppConfig.FlipsFolder) ||
-                !Directory.GetFiles(AppConfig.FlipsFolder).Any())
+                Directory.GetFiles(AppConfig.FlipsFolder).Length == 0)
             {
                 _logger.LogInformation("No flip cards found");
                 return;
@@ -135,13 +128,12 @@ namespace ScryForge.Services
             {
                 string flipsName = $"{baseName}_flips";
 
-                // Kopieer alle flips naar de upscaled folder
                 _copy.CopyFolderFiles(AppConfig.FlipsFolder, AppConfig.UpscaledFolder);
 
                 await RunAsync("flips", flipsName, true);
 
                 string outputPath = Path.Combine(AppConfig.BasePath, "Output");
-                Directory.CreateDirectory(outputPath); // Zorg dat de folder bestaat
+                Directory.CreateDirectory(outputPath);
 
                 _copy.MoveFile(
                     Path.Combine(AppConfig.PdfPath, $"{flipsName}.pdf"),
