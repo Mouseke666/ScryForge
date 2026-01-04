@@ -31,6 +31,7 @@
     <Content Include="Custom\**\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <PackageReference Include="System.IO.Abstractions" Version="22.1.0" />
   </ItemGroup>
   <Target Name="EnsureLogFolder" BeforeTargets="Build;Publish">
     <MakeDir Directories="$(OutputPath)Log" />
