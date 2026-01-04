@@ -1,11 +1,12 @@
-﻿using ScryForge.Services;
+﻿using ScryForge;
+using ScryForge.Logging;
+using ScryForge.Services;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using ScryForge.Logging;
-using Microsoft.Extensions.Logging.Console;
 using ScryForge.Services.Interfaces;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging.Console;
+using Microsoft.Extensions.DependencyInjection;
 
 internal class Program
 {
@@ -13,7 +14,6 @@ internal class Program
     {
         var builder = Host.CreateApplicationBuilder(args);
 
-        // ---- Services ----
         builder.Services.AddSingleton<ICleanupService, CleanupService>();
         builder.Services.AddSingleton<IOpenFolderService, OpenFolderService>();
         builder.Services.AddSingleton<ICardParserService, CardParserService>();
@@ -28,28 +28,23 @@ internal class Program
         builder.Services.AddSingleton<ICustomCardService, CustomCardService>();
         builder.Services.AddHostedService<PipelineService>();
 
-        // ---- HTTP Client ----
         builder.Services.AddHttpClient("Scryfall", client =>
         {
             client.BaseAddress = new Uri("https://api.scryfall.com/");
             client.Timeout = TimeSpan.FromMinutes(10);
         });
 
-        // ---- Clean Logging ----
         builder.Logging.ClearProviders();
 
-        // Voeg onze custom formatter toe
         builder.Logging.AddConsole(options =>
         {
             options.FormatterName = "clean";
         });
         builder.Logging.Services.AddSingleton<ConsoleFormatter, CleanConsoleFormatter>();
 
-        // Filter externe logging weg
         builder.Logging.AddFilter("System.Net.Http.HttpClient", LogLevel.Warning);
         builder.Logging.AddFilter("Microsoft.Hosting.Lifetime", LogLevel.None);
 
-        // ---- Configuration ----
         var configuration = new ConfigurationBuilder()
             .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
             .AddJsonFile("appsettings.json", optional: true)
