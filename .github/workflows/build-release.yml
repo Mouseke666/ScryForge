@@ -91,9 +91,11 @@ jobs:
       - name: Prepare release folder
         shell: pwsh
         run: |
-          $releaseFolder = "./ScryForge"
+          $version = "${{ steps.version.outputs.VERSION }}"
+          $releaseFolder = "ScryForge-$version"
+
           if (Test-Path $releaseFolder) { Remove-Item $releaseFolder -Recurse -Force }
-          New-Item -ItemType Directory -Path $releaseFolder -Force
+          New-Item -ItemType Directory -Path $releaseFolder -Force | Out-Null
 
           # Published executable + runtime files
           Copy-Item -Path "./publish/*" -Destination $releaseFolder -Recurse -Force
@@ -108,8 +110,9 @@ jobs:
       - name: Compress release folder
         shell: pwsh
         run: |
-          Compress-Archive -Path "./ScryForge" `
-            -DestinationPath "ScryForge_${{ github.ref_name }}.zip" -Force
+          $version = "${{ steps.version.outputs.VERSION }}"
+          Compress-Archive -Path "ScryForge-$version" `
+            -DestinationPath "ScryForge_$version.zip" -Force
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -122,6 +125,6 @@ jobs:
 
             **Changes since last release:**
             ${{ steps.commits.outputs.COMMITS }}
-          files: "ScryForge_${{ github.ref_name }}.zip"
+          files: "ScryForge_*.zip"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
