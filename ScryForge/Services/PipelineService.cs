@@ -1,0 +1,208 @@
+using ScryForge.Models;
+using ScryForge.Models.Scryfall;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using ScryForge.Services.Interfaces;
+
+namespace ScryForge.Services;
+
+public class PipelineService(
+    ILogger<PipelineService> logger,
+    ICleanupService cleanup,
+    IOpenFolderService openfolder,
+    ICardParserService parser,
+    IDownloaderService downloader,
+    IUpscalerService upscaler,
+    ICardCopyService cardCopy,
+    IPDFService pdf,
+    IPDFOpenService openPdf,
+    IEmptySlotsService emptySlots,
+    IPDFNameService pdfNameService,
+    ICustomCardService customCardService) : BackgroundService
+{
+    private readonly ILogger<PipelineService> _logger = logger;
+    private readonly ICleanupService _cleanup = cleanup;
+    private readonly IOpenFolderService _openfolder = openfolder;
+    private readonly ICardParserService _parser = parser;
+    private readonly IDownloaderService _downloader = downloader;
+    private readonly IUpscalerService _upscaler = upscaler;
+    private readonly ICardCopyService _cardCopy = cardCopy;
+    private readonly IPDFService _pdf = pdf;
+    private readonly IPDFOpenService _openPdf = openPdf;
+    private readonly IEmptySlotsService _emptySlots = emptySlots;
+    private readonly IPDFNameService _pdfNameService = pdfNameService;
+    private readonly ICustomCardService _customCardService = customCardService;
+
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        _logger.LogInformation("PipelineService started");
+
+        try
+        {
+            await RunPipelineAsync(stoppingToken);
+            _logger.LogInformation("Pipeline completed successfully");
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogInformation("Pipeline cancelled");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Fatal pipeline error");
+        }
+    }
+
+    private void LogStep(ref int step, int total, string message)
+    {
+        _logger.LogInformation("Step {Step}/{Total}: {Message}", step++, total, message);
+    }
+
+    private async Task RunPipelineAsync(CancellationToken ct)
+    {
+        _logger.LogInformation(AppVersion.GetFull());
+
+        int step = 1;
+        int totalSteps = 14;
+
+        _logger.LogInformation("=== Step 1-3: Setup ===");
+
+        LogStep(ref step, totalSteps, "Cleaning working directories");
+        await _cleanup.CleanDirectoryAsync(AppConfig.ScryForgeDownloaderPath);
+        await _cleanup.CleanDirectoryAsync(AppConfig.PDFImagesFolder);
+
+        LogStep(ref step, totalSteps, "Fetching Scryfall cards");
+
+        List<ScryfallCard> scryfallCards;
+        try
+        {
+            scryfallCards = (await _downloader.FetchCardsAsync()).ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Fetching Scryfall cards failed");
+            return;
+        }
+
+        LogStep(ref step, totalSteps, "Fetching custom cards");
+        IReadOnlyList<CustomCard> customCards = await _customCardService.FetchCustomCardsAsync(AppConfig.CustomFolder);
+
+        if (scryfallCards.Count == 0 && customCards.Count == 0)
+        {
+            _logger.LogWarning("No cards fetched from Scryfall and/or no custom cards available. Aborting pipeline.");
+            return;
+        }
+
+        var emptySlotsResult = await _emptySlots.AnalyzeAsync(scryfallCards, customCards, ct);
+        if (emptySlotsResult.ShouldStopPipeline)
+        {
+            _logger.LogInformation("Exiting program by user choice.");
+            return;
+        }
+
+        _logger.LogInformation("=== Step 4-6: PDF Preparation ===");
+
+        LogStep(ref step, totalSteps, "Determining PDF name");
+        var pdfNameResult = await _pdfNameService.DeterminePdfNameAsync(AppConfig.CardsFile);
+
+        LogStep(ref step, totalSteps, "Downloading card images");
+        try
+        {
+            await _downloader.DownloadImagesAsync(scryfallCards);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Downloading images failed");
+        }
+
+        LogStep(ref step, totalSteps, "Upscaling images");
+        if (!await _upscaler.RunUpscalerForCardsAsync(scryfallCards))
+        {
+            return;
+        }
+
+        _logger.LogInformation("=== Step 7-10: Custom Cards and Parsing ===");
+
+        LogStep(ref step, totalSteps, "Copy Custom Cards");
+        await _customCardService.CopyCustomCardsAsync(customCards, AppConfig.PDFImagesFolder);
+
+        LogStep(ref step, totalSteps, "Parsing cards.txt");
+        List<CardInfo> cards = [];
+        try
+        {
+            cards = await _parser.ParseCardsAsync(AppConfig.CardsFile);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Parsing cards.txt failed");
+        }
+
+        LogStep(ref step, totalSteps, "Parsing Custom Cards");
+        cards.AddRange(await _parser.ParseCustomCardsAsync(customCards));
+
+        LogStep(ref step, totalSteps, "Processing cards");
+        try
+        {
+            _cardCopy.ProcessCards(cards);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Processing cards failed");
+        }
+
+        _logger.LogInformation("=== Step 11-14: PDF Generation and Cleanup ===");
+
+        LogStep(ref step, totalSteps, "Generating main PDF");
+        try
+        {
+            await _pdf.GenerateMainPdfAsync(pdfNameResult.BaseName, cards);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Generating main PDF failed");
+        }
+
+        LogStep(ref step, totalSteps, "Cleaning upscaled folder (excluding flips)");
+        try
+        {
+            await _cleanup.CleanDirectoryAsync(AppConfig.PDFImagesFolder, "flips");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Cleaning upscaled folder failed");
+        }
+
+        LogStep(ref step, totalSteps, "Generating flips PDF if required");
+        try
+        {
+            await _pdf.GenerateFlipsPdfAsync(pdfNameResult.BaseName);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Generating flips PDF failed");
+        }
+
+        LogStep(ref step, totalSteps, "Opening output folder");
+        try
+        {
+            _openfolder.OpenFolder(AppConfig.OutputFolder);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Opening folder failed");
+        }
+
+        _logger.LogInformation("Pipeline finished");
+        _logger.LogInformation("Thank you for using ScryForge!");
+
+        Console.WriteLine("[Action Required] Press any key to exit...");
+        Console.Write("> ");
+        _ = Console.ReadLine();
+        Environment.Exit(0);
+    }
+
+    public override async Task StopAsync(CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("PipelineService stopping");
+        await base.StopAsync(cancellationToken);
+    }
+}
