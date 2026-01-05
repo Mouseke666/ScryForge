@@ -25,10 +25,10 @@ Write-Host ""
 Write-Host "New release: $newTag" -ForegroundColor Magenta
 Write-Host "Local app version will show: $newVersion" -ForegroundColor Gray
 
-# Update ScryForge.csproj
-$csprojPath = "ScryForge.csproj"
+# Update ScryForge.csproj — nu in submap
+$csprojPath = "ScryForge/ScryForge.csproj"
 if (-not (Test-Path $csprojPath)) {
-    Write-Error "ERROR: $csprojPath not found!"
+    Write-Error "ERROR: $csprojPath not found! Are you in the repository root?"
     exit 1
 }
 
@@ -76,5 +76,3 @@ Write-Host "DONE! New version: $newTag" -ForegroundColor Green
 Write-Host "Local app now shows: $newVersion" -ForegroundColor Green
 Write-Host "GitHub Actions is building the release..." -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Cyan
-
-# No pause - script ends automatically
