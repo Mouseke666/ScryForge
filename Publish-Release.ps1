@@ -1,8 +1,32 @@
+$ErrorActionPreference = "Stop"
+Set-StrictMode -Version Latest
+
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "   ScryForge Release Script" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 
-# Get the latest tag
+# Forceer dat we in de repository root staan
+$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+
+if (-not (Test-Path (Join-Path $scriptDir "ScryForge.sln"))) {
+    Write-Error "FOUT: Dit script moet uitgevoerd worden vanuit de repository root (waar ScryForge.sln staat)!"
+    Write-Host "Huidige map: $(Get-Location)" -ForegroundColor Red
+    Write-Host "Verwachte map: $scriptDir" -ForegroundColor Red
+    exit 1
+}
+
+# Correct pad naar csproj
+$csprojPath = Join-Path $scriptDir "ScryForge\ScryForge.csproj"
+
+if (-not (Test-Path $csprojPath)) {
+    Write-Error "FOUT: Kan ScryForge.csproj niet vinden op $csprojPath"
+    exit 1
+}
+
+Write-Host "Script draait vanuit: $scriptDir" -ForegroundColor Green
+Write-Host "Gevonden csproj: $csprojPath" -ForegroundColor Green
+
+# Haal laatste git tag op
 $lastTag = git tag --sort=-v:refname | Select-Object -First 1
 
 if (-not $lastTag) {
@@ -13,62 +37,67 @@ else {
     Write-Host "Latest tag: $lastTag" -ForegroundColor Green
 }
 
-# Calculate new version
+# Bepaal nieuwe versie (patch bump)
 $version = $lastTag.Substring(1)
 $parts = $version.Split('.')
-$patch = [int]$parts[2] + 1
 
-$newTag = "v$($parts[0]).$($parts[1]).$patch"
+if ($parts.Count -ne 3) {
+    throw "Invalid tag format '$lastTag' (expected vX.Y.Z)"
+}
+
+$patch = [int]$parts[2] + 1
 $newVersion = "$($parts[0]).$($parts[1]).$patch"
+$newTag = "v$newVersion"
 
 Write-Host ""
 Write-Host "New release: $newTag" -ForegroundColor Magenta
 Write-Host "Local app version will show: $newVersion" -ForegroundColor Gray
 
-# Update ScryForge.csproj — nu in submap
-$csprojPath = "ScryForge/ScryForge.csproj"
-if (-not (Test-Path $csprojPath)) {
-    Write-Error "ERROR: $csprojPath not found! Are you in the repository root?"
-    exit 1
-}
-
 Write-Host ""
-Write-Host "Cleaning and updating version in $csprojPath..." -ForegroundColor Yellow
+Write-Host "Cleaning and updating version in csproj..." -ForegroundColor Yellow
 
-[xml]$xml = Get-Content $csprojPath -Encoding UTF8
+# Laad csproj als XML
+[xml]$xml = Get-Content $csprojPath -Raw -Encoding UTF8
 
-# 1. Remove ALL existing <Version> nodes (cleanup)
-$versionNodes = $xml.SelectNodes("//Version")
-foreach ($node in $versionNodes) {
-    $node.ParentNode.RemoveChild($node) | Out-Null
+# Zoek een onvoorwaardelijke PropertyGroup
+$targetGroup = $xml.Project.PropertyGroup |
+    Where-Object { -not $_.Condition -or $_.Condition.Trim() -eq '' } |
+    Select-Object -First 1
+
+if (-not $targetGroup) {
+    throw "No unconditional <PropertyGroup> found in csproj"
 }
 
-# 2. Add one clean <Version> node to the first PropertyGroup
-$firstPropertyGroup = $xml.Project.PropertyGroup[0]
-if (-not $firstPropertyGroup) {
-    $firstPropertyGroup = $xml.CreateElement("PropertyGroup")
-    $xml.Project.AppendChild($firstPropertyGroup) | Out-Null
+# Zoek of maak <Version>
+$versionNode = $targetGroup.Version
+
+if ($versionNode) {
+    Write-Host "Updating existing <Version> from '$($versionNode.InnerText)' to '$newVersion'" -ForegroundColor Cyan
+    $versionNode.InnerText = $newVersion
+}
+else {
+    $versionNode = $xml.CreateElement("Version")
+    $versionNode.InnerText = $newVersion
+    $targetGroup.AppendChild($versionNode) | Out-Null
+    Write-Host "Added new <Version>$newVersion</Version>" -ForegroundColor Green
 }
 
-$newVersionNode = $xml.CreateElement("Version")
-$newVersionNode.InnerText = $newVersion
-$firstPropertyGroup.AppendChild($newVersionNode) | Out-Null
-
-# Save changes
-$xml.Save($csprojPath)
+# Opslaan als UTF-8 zonder BOM (MSBuild-safe)
+$utf8NoBom = New-Object System.Text.UTF8Encoding $false
+[System.IO.File]::WriteAllText($csprojPath, $xml.OuterXml, $utf8NoBom)
 
 Write-Host "Version successfully set to $newVersion" -ForegroundColor Green
 
-# Git: add, commit, tag, push
+# Git: commit, tag, push
 git add $csprojPath
 git commit -m "chore: bump version to $newVersion" --no-verify
 
 git tag -a $newTag -m "Release $newTag"
 
 Write-Host ""
-Write-Host "Pushing tag and main branch..." -ForegroundColor Yellow
+Write-Host "Pushing tag and branch..." -ForegroundColor Yellow
 git push origin $newTag
-git push origin main  # change to 'master' if your default branch has a different name
+git push origin HEAD
 
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Cyan
