@@ -4,87 +4,115 @@ using ScryForge.Services.Interfaces;
 
 namespace ScryForge.Services
 {
+    /// <summary>
+    /// Service to clean up a directory by deleting all files and subdirectories, 
+    /// optionally excluding a single subfolder.
+    /// </summary>
     public class CleanupService(ILogger<CleanupService> logger, IFileSystem fileSystem) : ICleanupService
     {
-        private readonly ILogger<CleanupService> _logger = logger;
-        private readonly IFileSystem _fileSystem = fileSystem;
-
+        /// <summary>
+        /// Cleans the specified directory by deleting all files and subdirectories, 
+        /// optionally excluding one subfolder.
+        /// </summary>
+        /// <param name="path">The directory to clean.</param>
+        /// <param name="excludeSubfolder">Optional name of a subfolder to exclude from deletion.</param>
+        /// <param name="ct">Cancellation token to cancel the operation.</param>
+        /// <exception cref="ArgumentException">Thrown if <paramref name="path"/> is null, empty, or whitespace.</exception>
         public async Task CleanDirectoryAsync(string path, string? excludeSubfolder = null, CancellationToken ct = default)
         {
-            if (string.IsNullOrWhiteSpace(path)) return;
+            ct.ThrowIfCancellationRequested();
 
-            if (!_fileSystem.Directory.Exists(path))
+            if (string.IsNullOrWhiteSpace(path))
+                throw new ArgumentException("Path must not be null, empty or whitespace.", nameof(path));
+
+            if (!fileSystem.Directory.Exists(path))
             {
                 try
                 {
-                    await Task.Run(() => _fileSystem.Directory.CreateDirectory(path), ct);
-                    _logger.LogDebug("Created missing directory: {Path}", path);
+                    ct.ThrowIfCancellationRequested();
+                    fileSystem.Directory.CreateDirectory(path);
+                    logger.LogDebug("Created missing directory: {Path}", path);
                 }
                 catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
                 {
-                    _logger.LogWarning(ex, "Could not create directory: {Path}", path);
+                    logger.LogWarning(ex, "Could not create directory: {Path}", path);
                 }
                 return;
             }
 
             try
             {
-                var files = _fileSystem.Directory.GetFiles(path);
-                var allDirectories = _fileSystem.Directory.GetDirectories(path);
+                var files = fileSystem.Directory.GetFiles(path);
+                var allDirectories = fileSystem.Directory.GetDirectories(path);
 
                 var directoriesToDelete = allDirectories
                     .Where(dir => !string.Equals(
-                        _fileSystem.Path.GetFileName(dir),
-                        excludeSubfolder,
+                        Path.GetFullPath(dir).TrimEnd(Path.DirectorySeparatorChar),
+                        Path.Combine(path, excludeSubfolder ?? string.Empty).TrimEnd(Path.DirectorySeparatorChar),
                         StringComparison.OrdinalIgnoreCase));
 
-                var fileTasks = files.Select(file => DeleteFileAsync(file, ct));
-                var dirTasks = directoriesToDelete.Select(dir => DeleteDirectoryAsync(dir, ct));
+                foreach (var file in files)
+                {
+                    ct.ThrowIfCancellationRequested();
+                    DeleteFile(file);
+                }
 
-                await Task.WhenAll(fileTasks.Concat(dirTasks));
+                foreach (var dir in directoriesToDelete)
+                {
+                    ct.ThrowIfCancellationRequested();
+                    DeleteDirectory(dir);
+                }
             }
             catch (OperationCanceledException)
             {
-                _logger.LogInformation("Cleanup cancelled for directory: {Path}", path);
+                logger.LogInformation("Cleanup cancelled for directory: {Path}", path);
                 throw;
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Unexpected error during cleanup of: {Path}", path);
+                logger.LogError(ex, "Unexpected error during cleanup of: {Path}", path);
             }
+
+            await Task.CompletedTask;
         }
 
-        private async Task DeleteFileAsync(string filePath, CancellationToken ct = default)
+        private void DeleteFile(string filePath)
         {
             try
             {
-                await Task.Run(() => _fileSystem.File.Delete(filePath), ct);
+                fileSystem.File.Delete(filePath);
             }
-            catch (OperationCanceledException) { throw; }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
-                _logger.LogWarning(ex, "Could not delete file (possibly in use): {File}", filePath);
+                logger.LogWarning(ex, "Could not delete file (possibly in use): {File}", filePath);
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Unexpected error deleting file: {File}", filePath);
+                logger.LogError(ex, "Unexpected error deleting file: {File}", filePath);
             }
         }
 
-        private async Task DeleteDirectoryAsync(string directoryPath, CancellationToken ct = default)
+        private void DeleteDirectory(string directoryPath)
         {
             try
             {
-                await Task.Run(() => _fileSystem.Directory.Delete(directoryPath, recursive: true), ct);
+                fileSystem.Directory.Delete(directoryPath, recursive: true);
             }
-            catch (OperationCanceledException) { throw; }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
-                _logger.LogWarning(ex, "Could not delete directory (possibly in use): {Dir}", directoryPath);
+                logger.LogWarning(ex, "Could not delete directory (possibly in use): {Dir}", directoryPath);
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Unexpected error deleting directory: {Dir}", directoryPath);
+                logger.LogError(ex, "Unexpected error deleting directory: {Dir}", directoryPath);
             }
         }
     }
