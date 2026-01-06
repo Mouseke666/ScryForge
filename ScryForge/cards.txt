@@ -1,12 +1,3 @@
-1 Ygra, Eater of All (BLB) 241
-1 Academy Manufactor (MOC) 346
-1 Assassin's Trophy (MKM) 412
-1 Bane of Progress (C13) 137
-1 Beast Within (DSC) 80
-1 Birds of Paradise (8ED) 233
-1 Black Market Connections (LCC) 181
-1 Bojuka Bog (TDC) 341
-1 Boseiju, Who Endures (NEO) 266
-1 Braids, Arisen Nightmare (PDMU) 84p
-1 Brawn (M3C) 224
-1 Bristlebud Farmer (BIG) 17
+1 Slicer, Hired Muscle / Slicer, High-Speed Antagonist (BOT) 6
+1 Burnished Hart (FDN) 250
+1 Dread (LRW) 107

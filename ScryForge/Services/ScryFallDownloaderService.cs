@@ -269,7 +269,7 @@ public class ScryFallDownloaderService : IDownloaderService
 
         int current = Interlocked.Increment(ref _downloadedCount);
 
-        string displayName = faceSuffix == null ? cardName : $"{cardName} // {faceSuffix}";
+        string displayName = faceSuffix == null ? card.Name : $"{card.Name} ({faceSuffix})";
         _logger.LogInformation("Downloaded [{Current}/{Total}] — {Name}", current, _totalCount, displayName);
     }
 

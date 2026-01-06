@@ -17,72 +17,9 @@ namespace ScryForge.Services
                 return false;
             }
 
-            var allImages = cards.SelectMany(c =>
-            {
-                if (c.IsDoubleFaced && c.CardFaces != null && c.CardFaces.Count > 1)
-                {
-                    return new[]
-                    {
-                        (c.FrontImagePath, c.Name, face: (string?)"Front"),
-                        (c.BackImagePath, c.Name, face: (string?)"Back")
-                    };
-                }
-                return new[] { (c.FrontImagePath, c.Name, (string?)null) };
-            }).ToList();
-
-            int totalImages = allImages.Count;
-            int currentImage = 0;
-
-            using var semaphore = new SemaphoreSlim(AppConfig.UpscalerThreads);
-            var tasks = allImages.Select(async imageTuple =>
-            {
-                await semaphore.WaitAsync();
-                try
-                {
-                    var (imagePath, cardName, face) = imageTuple;
-
-                    if (string.IsNullOrWhiteSpace(imagePath) || !File.Exists(imagePath))
-                    {
-                        int skipped = Interlocked.Increment(ref currentImage);
-                        _logger.LogWarning(
-                            "Image not found for card {CardName}{Face}, skipping ([{Current}/{Total}]).",
-                            cardName,
-                            face != null ? $" ({face})" : string.Empty,
-                            skipped,
-                            totalImages);
-                        return;
-                    }
-
-                    int index = Interlocked.Increment(ref currentImage);
-
-                    _logger.LogInformation(
-                        "Upscaling [{Current}/{Total}] — {CardName}{Face}",
-                        index,
-                        totalImages,
-                        cardName,
-                        face != null ? $" ({face})" : string.Empty);
-
-                    await RunUpscalerForSingleImageAsync(imagePath, logOutput: false);
-                }
-                finally
-                {
-                    semaphore.Release();
-                }
-            });
-
-            await Task.WhenAll(tasks);
-            return true;
-        }
-
-        private async Task<bool> RunUpscalerForSingleImageAsync(
-            string imagePath,
-            bool logOutput = false)
-        {
-            if (!File.Exists(imagePath))
-            {
-                _logger.LogError("Image not found: {ImagePath}", imagePath);
-                return false;
-            }
+            string inputFolder = AppConfig.ScryForgeDownloaderPath;
+            string outputFolder = AppConfig.PDFImagesFolder;
+            Directory.CreateDirectory(outputFolder);
 
             var exe = AppConfig.UpscalerExe;
             if (string.IsNullOrWhiteSpace(exe) || !File.Exists(exe))
@@ -91,21 +28,7 @@ namespace ScryForge.Services
                 return false;
             }
 
-            Directory.CreateDirectory(AppConfig.PDFImagesFolder);
-
-            var outputFile = Path.Combine(
-                AppConfig.PDFImagesFolder,
-                Path.GetFileName(imagePath));
-
-            if (File.Exists(outputFile))
-                return true;
-
-            var args =
-                $"-i \"{imagePath}\" " +
-                $"-o \"{outputFile}\" " +
-                $"-n {AppConfig.UpscaleModel} " +
-                $"-s {AppConfig.UpscaleScale}" +
-                (logOutput ? " -v" : string.Empty);
+            var args = $"-i \"{inputFolder}\" -o \"{outputFolder}\" -n {AppConfig.UpscaleModel} -s {AppConfig.UpscaleScale} -v";
 
             var psi = new ProcessStartInfo
             {
@@ -114,8 +37,8 @@ namespace ScryForge.Services
                 WorkingDirectory = Path.GetDirectoryName(exe)!,
                 UseShellExecute = false,
                 CreateNoWindow = true,
-                RedirectStandardOutput = logOutput,
-                RedirectStandardError = logOutput
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
             };
 
             try
@@ -123,64 +46,96 @@ namespace ScryForge.Services
                 using var process = new Process { StartInfo = psi };
                 process.Start();
 
-                Task stdoutTask = logOutput
-                    ? ReadStdOutAsync(process)
-                    : Task.CompletedTask;
+                // StdOut task
+                var stdoutTask = Task.Run(async () =>
+                {
+                    string? line;
+                    while ((line = await process.StandardOutput.ReadLineAsync()) != null)
+                    {
+                        ProcessUpscalerLine(line, cards);
+                    }
+                });
 
-                Task stderrTask = logOutput
-                    ? ReadStdErrAsync(process)
-                    : Task.CompletedTask;
+                // StdErr task
+                var stderrTask = Task.Run(async () =>
+                {
+                    string? line;
+                    while ((line = await process.StandardError.ReadLineAsync()) != null)
+                    {
+                        if (string.IsNullOrWhiteSpace(line)) continue;
 
-                await process.WaitForExitAsync();
+                        if (line.Contains("error", StringComparison.OrdinalIgnoreCase) ||
+                            line.Contains("fail", StringComparison.OrdinalIgnoreCase))
+                        {
+                            _logger.LogError(line);
+                            continue;
+                        }
+
+                        ProcessUpscalerLine(line, cards);
+                    }
+                });
+
                 await Task.WhenAll(stdoutTask, stderrTask);
+                await process.WaitForExitAsync();
 
                 if (process.ExitCode != 0)
                 {
-                    _logger.LogError(
-                        "Upscaler exited with code {ExitCode}",
-                        process.ExitCode);
+                    _logger.LogError("Upscaler exited with code {ExitCode}", process.ExitCode);
                     return false;
                 }
 
-                return File.Exists(outputFile);
+                return true;
             }
             catch (Exception ex)
             {
-                _logger.LogError(
-                    ex,
-                    "Unexpected error during single-image upscaling");
+                _logger.LogError(ex, "Unexpected error during batch upscaling");
                 return false;
             }
         }
 
-        private async Task ReadStdOutAsync(Process process)
+
+
+
+
+
+        private void ProcessUpscalerLine(string line, IReadOnlyList<ScryfallCard> cards)
         {
-            string? line;
-            while ((line = await process.StandardOutput.ReadLineAsync()) != null)
-            {
-                if (!string.IsNullOrWhiteSpace(line))
-                    _logger.LogInformation(line);
-            }
+            // Alleen lines met "-> ... done" zijn relevant
+            if (!line.Contains("->") || !line.Contains("done")) return;
+
+            // Haal bestandsnaam van input af
+            string inputFile = line.Split("->")[0].Trim();
+            string fileName = Path.GetFileName(inputFile);
+
+            // Zoek bijpassende card
+            var card = cards.FirstOrDefault(c =>
+                Path.GetFileName(c.FrontImagePath) == fileName ||
+                Path.GetFileName(c.BackImagePath) == fileName);
+
+            if (card == null) return;
+
+            // Bepaal faces van deze kaart
+            var cardFaces = new List<(string Path, string Name)>();
+            if (!string.IsNullOrWhiteSpace(card.FrontImagePath))
+                cardFaces.Add((card.FrontImagePath, "Front"));
+            if (!string.IsNullOrWhiteSpace(card.BackImagePath))
+                cardFaces.Add((card.BackImagePath, "Back"));
+
+            int totalFaces = cardFaces.Count;
+            int currentFaceIndex = cardFaces.FindIndex(f => Path.GetFileName(f.Path) == fileName) + 1;
+
+            string faceName = cardFaces[currentFaceIndex - 1].Name;
+
+            _logger.LogInformation(
+                totalFaces > 1
+                    ? "Upscaling [{Current}/{Total}] — {CardName} ({Face})"
+                    : "Upscaling [{Current}/{Total}] — {CardName}",
+                currentFaceIndex,
+                totalFaces,
+                card.Name,
+                faceName
+            );
         }
 
-        private async Task ReadStdErrAsync(Process process)
-        {
-            string? line;
-            while ((line = await process.StandardError.ReadLineAsync()) != null)
-            {
-                if (string.IsNullOrWhiteSpace(line))
-                    continue;
-
-                if (line.Contains("error", StringComparison.OrdinalIgnoreCase) ||
-                    line.Contains("fail", StringComparison.OrdinalIgnoreCase))
-                {
-                    _logger.LogError(line);
-                }
-                else
-                {
-                    _logger.LogInformation(line);
-                }
-            }
-        }
     }
 }
