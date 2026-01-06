@@ -41,6 +41,11 @@ namespace ScryForge.Services
                 RedirectStandardError = true
             };
 
+            int currentImage = 0;
+            int totalImages = cards.Sum(c =>
+                (c.FrontImagePath != null ? 1 : 0) +
+                (c.BackImagePath != null ? 1 : 0));
+
             try
             {
                 using var process = new Process { StartInfo = psi };
@@ -52,7 +57,7 @@ namespace ScryForge.Services
                     string? line;
                     while ((line = await process.StandardOutput.ReadLineAsync()) != null)
                     {
-                        ProcessUpscalerLine(line, cards);
+                        ProcessUpscalerLine(line, cards, ref currentImage, totalImages);
                     }
                 });
 
@@ -71,7 +76,7 @@ namespace ScryForge.Services
                             continue;
                         }
 
-                        ProcessUpscalerLine(line, cards);
+                        ProcessUpscalerLine(line, cards, ref currentImage, totalImages);
                     }
                 });
 
@@ -93,12 +98,7 @@ namespace ScryForge.Services
             }
         }
 
-
-
-
-
-
-        private void ProcessUpscalerLine(string line, IReadOnlyList<ScryfallCard> cards)
+        private void ProcessUpscalerLine(string line, IReadOnlyList<ScryfallCard> cards, ref int currentImage, int totalImages)
         {
             // Alleen lines met "-> ... done" zijn relevant
             if (!line.Contains("->") || !line.Contains("done")) return;
@@ -122,20 +122,21 @@ namespace ScryForge.Services
                 cardFaces.Add((card.BackImagePath, "Back"));
 
             int totalFaces = cardFaces.Count;
-            int currentFaceIndex = cardFaces.FindIndex(f => Path.GetFileName(f.Path) == fileName) + 1;
+            int faceIndex = cardFaces.FindIndex(f => Path.GetFileName(f.Path) == fileName) + 1;
+            string faceName = cardFaces[faceIndex - 1].Name;
 
-            string faceName = cardFaces[currentFaceIndex - 1].Name;
+            int globalIndex = Interlocked.Increment(ref currentImage);
 
+            // Logging: alleen (Front/Back) tonen als er daadwerkelijk twee faces zijn
             _logger.LogInformation(
                 totalFaces > 1
-                    ? "Upscaling [{Current}/{Total}] — {CardName} ({Face})"
-                    : "Upscaling [{Current}/{Total}] — {CardName}",
-                currentFaceIndex,
-                totalFaces,
-                card.Name,
+                    ? "Upscaling [{Current}/{Total}] - {CardName} ({Face})"
+                    : "Upscaling [{Current}/{Total}] - {CardName}",
+                globalIndex,
+                totalImages,
+                $"{card.Name}{(totalFaces > 1 ? $" // {card.CardFaces?[1].Name}" : string.Empty)}",
                 faceName
             );
         }
-
     }
 }
