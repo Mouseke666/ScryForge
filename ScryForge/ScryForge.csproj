@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project
-  Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net9.0</TargetFramework>
@@ -10,50 +9,32 @@
     <InformationalVersion>$(Version)</InformationalVersion>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
     <Deterministic>true</Deterministic>
-    <Version>1.1.12</Version>
-    <Version>1.1.13</Version>
-    <Version>1.1.13</Version>
+    <Version>1.1.14</Version>
   </PropertyGroup>
   <ItemGroup>
-    <None
-      Update="PDF\**\*">
+    <None Update="PDF\**\*">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None
-      Update="Upscaler\**\*">
+    <None Update="Upscaler\**\*">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None
-      Update="cards.txt">
+    <None Update="cards.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference
-      Include="Microsoft.Extensions.DependencyInjection"
-      Version="10.0.0" />
-    <PackageReference
-      Include="Microsoft.Extensions.Hosting"
-      Version="10.0.0" />
-    <PackageReference
-      Include="Microsoft.Extensions.Http"
-      Version="10.0.0" />
-    <Content
-      Include="appsettings.json">
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.0" />
+    <Content Include="appsettings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content
-      Include="Custom\**\*">
+    <Content Include="Custom\**\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <PackageReference
-      Include="System.IO.Abstractions"
-      Version="22.1.0" />
+    <PackageReference Include="System.IO.Abstractions" Version="22.1.0" />
   </ItemGroup>
-  <Target
-    Name="EnsureLogFolder"
-    BeforeTargets="Build;Publish">
-    <MakeDir
-      Directories="$(OutputPath)Log" />
+  <Target Name="EnsureLogFolder" BeforeTargets="Build;Publish">
+    <MakeDir Directories="$(OutputPath)Log" />
   </Target>
 </Project>
