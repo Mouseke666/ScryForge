@@ -19,7 +19,6 @@ namespace ScryForge
         public static readonly string PDFExe = Path.Combine(PDFPath, "proxy_pdf_cli.exe");
         public static string UpscaleModel { get; private set; } = "digital-art-4x";
         public static int UpscaleScale { get; private set; } = 4;
-        public static int UpscalerThreads { get; private set; } = Environment.ProcessorCount;
         public static bool AutoFillEmptySlots { get; private set; } = false;
         public static bool AutoUseSuggestedName { get; private set; } = false;
 
@@ -30,11 +29,6 @@ namespace ScryForge
             if (int.TryParse(config["Upscaler:Scale"], out var scale))
             {
                 UpscaleScale = scale;
-            }
-
-            if (int.TryParse(config["Upscaler:Threads"], out var threads))
-            {
-                UpscalerThreads = threads;
             }
 
             if (bool.TryParse(config["Pdf:AutoFillEmptySlots"], out var autoFill))

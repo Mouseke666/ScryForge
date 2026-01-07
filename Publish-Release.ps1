@@ -1,3 +1,7 @@
+# ============================
+# ScryForge Release Script
+# ============================
+
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 
@@ -5,93 +9,107 @@ Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "   ScryForge Release Script" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 
-# Forceer dat we in de repository root staan
+# Bepaal script- en repo-pad
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+Write-Host "DEBUG: Repository root = $scriptDir"
 
 if (-not (Test-Path (Join-Path $scriptDir "ScryForge.sln"))) {
-    Write-Error "FOUT: Dit script moet uitgevoerd worden vanuit de repository root (waar ScryForge.sln staat)!"
+    Write-Error "FOUT: Script moet worden uitgevoerd vanuit de repository root!"
     Write-Host "Huidige map: $(Get-Location)" -ForegroundColor Red
-    Write-Host "Verwachte map: $scriptDir" -ForegroundColor Red
     exit 1
 }
 
 # Correct pad naar csproj
 $csprojPath = Join-Path $scriptDir "ScryForge\ScryForge.csproj"
-
 if (-not (Test-Path $csprojPath)) {
-    Write-Error "FOUT: Kan ScryForge.csproj niet vinden op $csprojPath"
+    Write-Error "FOUT: Kan csproj niet vinden op $csprojPath"
     exit 1
 }
 
 Write-Host "Script draait vanuit: $scriptDir" -ForegroundColor Green
 Write-Host "Gevonden csproj: $csprojPath" -ForegroundColor Green
 
+# ============================
 # Haal laatste git tag op
-$lastTag = git tag --sort=-v:refname | Select-Object -First 1
-
+# ============================
+$lastTag = git tag --sort=-creatordate | Select-Object -First 1
 if (-not $lastTag) {
-    Write-Host "No tags found → starting from v0.0.0" -ForegroundColor Yellow
+    Write-Host "Geen tags gevonden → start vanaf v0.0.0" -ForegroundColor Yellow
     $lastTag = "v0.0.0"
-}
-else {
+} else {
     Write-Host "Latest tag: $lastTag" -ForegroundColor Green
 }
 
-# Bepaal nieuwe versie (patch bump)
-$version = $lastTag.Substring(1)
-$parts = $version.Split('.')
-
-if ($parts.Count -ne 3) {
-    throw "Invalid tag format '$lastTag' (expected vX.Y.Z)"
+# Bepaal nieuwe patch-versie
+$versionParts = $lastTag.Substring(1).Split('.')
+if ($versionParts.Count -ne 3) {
+    throw "Ongeldig tag-formaat '$lastTag', verwacht vX.Y.Z"
 }
 
-$patch = [int]$parts[2] + 1
-$newVersion = "$($parts[0]).$($parts[1]).$patch"
+$patch = [int]$versionParts[2] + 1
+$newVersion = "$($versionParts[0]).$($versionParts[1]).$patch"
 $newTag = "v$newVersion"
 
 Write-Host ""
 Write-Host "New release: $newTag" -ForegroundColor Magenta
 Write-Host "Local app version will show: $newVersion" -ForegroundColor Gray
-
 Write-Host ""
-Write-Host "Cleaning and updating version in csproj..." -ForegroundColor Yellow
 
+# ============================
 # Laad csproj als XML
-[xml]$xml = Get-Content $csprojPath -Raw -Encoding UTF8
-
-# Zoek een onvoorwaardelijke PropertyGroup
-$targetGroup = $xml.Project.PropertyGroup |
-    Where-Object { -not $_.Condition -or $_.Condition.Trim() -eq '' } |
-    Select-Object -First 1
-
-if (-not $targetGroup) {
-    throw "No unconditional <PropertyGroup> found in csproj"
+# ============================
+try {
+    $reader = [System.IO.StreamReader]::new($csprojPath,[System.Text.Encoding]::UTF8)
+    $xml = New-Object System.Xml.XmlDocument
+    $xml.Load($reader)
+    $reader.Close()
+    Write-Host "DEBUG: XML loaded successfully. Root element: $($xml.DocumentElement.Name)"
+} catch {
+    Write-Error "Failed to load XML from $csprojPath"
+    Write-Error $_.Exception.Message
+    exit 1
 }
 
-# Zoek of maak <Version>
-$versionNode = $targetGroup.Version
+# ============================
+# Pak eerste PropertyGroup via SelectNodes
+# ============================
+$propertyGroups = $xml.SelectNodes("/Project/PropertyGroup")
+if ($propertyGroups.Count -eq 0) {
+    throw "Geen <PropertyGroup> gevonden in csproj"
+}
+$targetGroup = $propertyGroups[0]
 
+# ============================
+# Update of voeg <Version> toe
+# ============================
+$versionNode = $targetGroup.SelectSingleNode("Version")
 if ($versionNode) {
     Write-Host "Updating existing <Version> from '$($versionNode.InnerText)' to '$newVersion'" -ForegroundColor Cyan
     $versionNode.InnerText = $newVersion
-}
-else {
+} else {
     $versionNode = $xml.CreateElement("Version")
     $versionNode.InnerText = $newVersion
     $targetGroup.AppendChild($versionNode) | Out-Null
     Write-Host "Added new <Version>$newVersion</Version>" -ForegroundColor Green
 }
 
-# Opslaan als UTF-8 zonder BOM (MSBuild-safe)
-$utf8NoBom = New-Object System.Text.UTF8Encoding $false
-[System.IO.File]::WriteAllText($csprojPath, $xml.OuterXml, $utf8NoBom)
+# ============================
+# Opslaan als UTF-8 zonder BOM, netjes geformatteerd
+# ============================
+$settings = New-Object System.Xml.XmlWriterSettings
+$settings.Indent = $true
+$settings.Encoding = [System.Text.UTF8Encoding]::new($false)
+$writer = [System.Xml.XmlWriter]::Create($csprojPath, $settings)
+$xml.Save($writer)
+$writer.Close()
 
 Write-Host "Version successfully set to $newVersion" -ForegroundColor Green
 
+# ============================
 # Git: commit, tag, push
+# ============================
 git add $csprojPath
 git commit -m "chore: bump version to $newVersion" --no-verify
-
 git tag -a $newTag -m "Release $newTag"
 
 Write-Host ""
