@@ -86,7 +86,7 @@ public class ScryFallDownloaderService : IDownloaderService
     {
         if (!cards.Any())
         {
-            _logger.LogInformation("No cards to download images for.");
+            _logger.LogInformation("No cards available for image download.");
             return;
         }
 

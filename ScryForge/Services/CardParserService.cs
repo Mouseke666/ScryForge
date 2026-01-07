@@ -218,7 +218,8 @@ namespace ScryForge.Services
                 cards.Add(cardInfo);
             }
 
-            _logger.LogInformation("Converted {Count} custom cards into CardInfo format.", cards.Count);
+            _logger.LogInformation("Successfully converted {Count} custom card(s).", cards.Count);
+
             return cards;
         }
     }

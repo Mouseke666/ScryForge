@@ -18,8 +18,9 @@ namespace ScryForge.Services
         /// <param name="excludeSubfolder">Optional name of a subfolder to exclude from deletion.</param>
         /// <param name="ct">Cancellation token to cancel the operation.</param>
         /// <exception cref="ArgumentException">Thrown if <paramref name="path"/> is null, empty, or whitespace.</exception>
-        public async Task CleanDirectoryAsync(string path, string? excludeSubfolder = null, CancellationToken ct = default)
+        public async Task<bool> CleanDirectoryAsync(string path, string? excludeSubfolder = null, CancellationToken ct = default)
         {
+            bool success = true; // start met aanname dat alles goed gaat
             ct.ThrowIfCancellationRequested();
 
             if (string.IsNullOrWhiteSpace(path))
@@ -36,8 +37,9 @@ namespace ScryForge.Services
                 catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
                 {
                     logger.LogWarning(ex, "Could not create directory: {Path}", path);
+                    success = false;
                 }
-                return;
+                return success;
             }
 
             try
@@ -54,13 +56,13 @@ namespace ScryForge.Services
                 foreach (var file in files)
                 {
                     ct.ThrowIfCancellationRequested();
-                    DeleteFile(file);
+                    if (!DeleteFile(file)) success = false;
                 }
 
                 foreach (var dir in directoriesToDelete)
                 {
                     ct.ThrowIfCancellationRequested();
-                    DeleteDirectory(dir);
+                    if (!DeleteDirectory(dir)) success = false;
                 }
             }
             catch (OperationCanceledException)
@@ -71,16 +73,18 @@ namespace ScryForge.Services
             catch (Exception ex)
             {
                 logger.LogError(ex, "Unexpected error during cleanup of: {Path}", path);
+                success = false;
             }
 
-            await Task.CompletedTask;
+            return success;
         }
 
-        private void DeleteFile(string filePath)
+        private bool DeleteFile(string filePath)
         {
             try
             {
                 fileSystem.File.Delete(filePath);
+                return true;
             }
             catch (OperationCanceledException)
             {
@@ -89,18 +93,21 @@ namespace ScryForge.Services
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
                 logger.LogWarning(ex, "Could not delete file (possibly in use): {File}", filePath);
+                return false;
             }
             catch (Exception ex)
             {
                 logger.LogError(ex, "Unexpected error deleting file: {File}", filePath);
+                return false;
             }
         }
 
-        private void DeleteDirectory(string directoryPath)
+        private bool DeleteDirectory(string directoryPath)
         {
             try
             {
                 fileSystem.Directory.Delete(directoryPath, recursive: true);
+                return true;
             }
             catch (OperationCanceledException)
             {
@@ -109,11 +116,14 @@ namespace ScryForge.Services
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
                 logger.LogWarning(ex, "Could not delete directory (possibly in use): {Dir}", directoryPath);
+                return false;
             }
             catch (Exception ex)
             {
                 logger.LogError(ex, "Unexpected error deleting directory: {Dir}", directoryPath);
+                return false;
             }
         }
+
     }
 }

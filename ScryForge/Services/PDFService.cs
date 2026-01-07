@@ -12,7 +12,7 @@ namespace ScryForge.Services
         private readonly ICopyService _copy = copy;
         private readonly ICleanupService _cleanup = cleanup;
 
-        public async Task RunAsync(string project, string pdfFileName, bool showOutput = true)
+        private async Task RunAsync(string project, string pdfFileName, bool showOutput = true)
         {
             var exe = AppConfig.PDFExe;
             if (!File.Exists(exe))
@@ -93,35 +93,42 @@ namespace ScryForge.Services
             }
         }
 
-        public async Task GenerateMainPdfAsync(string baseName, IEnumerable<CardInfo> cards)
+        public async Task<bool> GenerateMainPdfAsync(string baseName, IEnumerable<CardInfo> cards, bool showOutput = true)
         {
             if (!cards.Any(c => !c.IsFlip))
-                return;
+            {
+                if (showOutput) _logger.LogInformation("No standard cards to generate PDF for: {BaseName}", baseName);
+                return false;
+            }
 
             try
             {
-                await RunAsync("default", baseName, true);
+                await RunAsync("default", baseName, showOutput);
 
                 string outputPath = Path.Combine(AppConfig.BasePath, "Output");
-                Directory.CreateDirectory(outputPath); // Zorg dat de folder bestaat
+                Directory.CreateDirectory(outputPath);
 
-                _copy.MoveFile(
-                    Path.Combine(AppConfig.PdfPath, $"{baseName}.pdf"),
-                    Path.Combine(outputPath, $"{baseName}.pdf"));
+                string sourcePdf = Path.Combine(AppConfig.PdfPath, $"{baseName}.pdf");
+                string destPdf = Path.Combine(outputPath, $"{baseName}.pdf");
+
+                _copy.MoveFile(sourcePdf, destPdf);
+
+                if (showOutput) _logger.LogInformation("Main PDF generated: {Pdf}", destPdf);
+                return true;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Generating main PDF failed");
+                _logger.LogError(ex, "Generating main PDF failed for {BaseName}", baseName);
+                return false;
             }
         }
 
-        public async Task GenerateFlipsPdfAsync(string baseName)
+        public async Task<bool> GenerateFlipsPdfAsync(string baseName, bool showOutput = true)
         {
-            if (!Directory.Exists(AppConfig.FlipsFolder) ||
-                Directory.GetFiles(AppConfig.FlipsFolder).Length == 0)
+            if (!Directory.Exists(AppConfig.FlipsFolder) || Directory.GetFiles(AppConfig.FlipsFolder).Length == 0)
             {
-                _logger.LogInformation("No flip cards found");
-                return;
+                if (showOutput) _logger.LogInformation("No flip cards found for PDF: {BaseName}", baseName);
+                return false;
             }
 
             try
@@ -130,20 +137,25 @@ namespace ScryForge.Services
 
                 _copy.CopyFolderFiles(AppConfig.FlipsFolder, AppConfig.PDFImagesFolder);
 
-                await RunAsync("flips", flipsName, true);
+                await RunAsync("flips", flipsName, showOutput);
 
                 string outputPath = Path.Combine(AppConfig.BasePath, "Output");
                 Directory.CreateDirectory(outputPath);
 
-                _copy.MoveFile(
-                    Path.Combine(AppConfig.PdfPath, $"{flipsName}.pdf"),
-                    Path.Combine(outputPath, $"{flipsName}.pdf"));
+                string sourcePdf = Path.Combine(AppConfig.PdfPath, $"{flipsName}.pdf");
+                string destPdf = Path.Combine(outputPath, $"{flipsName}.pdf");
+
+                _copy.MoveFile(sourcePdf, destPdf);
 
                 await _cleanup.CleanDirectoryAsync(AppConfig.PDFImagesFolder);
+
+                if (showOutput) _logger.LogInformation("Flips PDF generated: {Pdf}", destPdf);
+                return true;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Generating flips PDF failed");
+                _logger.LogError(ex, "Generating flips PDF failed for {BaseName}", baseName);
+                return false;
             }
         }
 

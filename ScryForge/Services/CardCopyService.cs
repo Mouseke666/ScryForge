@@ -8,8 +8,11 @@ namespace ScryForge.Services
     {
         private readonly ILogger<CardCopyService> _logger = logger;
 
-        public void ProcessCards(List<CardInfo> cards)
+        public ProcessCardsResult ProcessCards(List<CardInfo> cards)
         {
+            int flipCount = 0;
+            int singleCount = 0;
+
             Directory.CreateDirectory(AppConfig.FlipsFolder);
             Directory.CreateDirectory(AppConfig.PDFImagesFolder);
 
@@ -17,13 +20,17 @@ namespace ScryForge.Services
             foreach (var card in flipCards)
             {
                 ProcessFlipCard(card);
+                flipCount += card.Quantity;
             }
 
             var singleCards = cards.Where(c => !c.IsFlip && !string.Equals(c.SetCode, "CUSTOM", StringComparison.OrdinalIgnoreCase) && c.Quantity > 1);
             foreach (var card in singleCards)
             {
                 ProcessSingleCard(card);
+                singleCount += card.Quantity;
             }
+
+            return new ProcessCardsResult(cards.Count, flipCount, singleCount);
         }
 
         private void ProcessFlipCard(CardInfo card)

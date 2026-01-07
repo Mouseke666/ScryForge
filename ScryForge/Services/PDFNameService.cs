@@ -17,41 +17,11 @@ namespace ScryForge.Services
             if (string.IsNullOrWhiteSpace(suggestedName))
             {
                 suggestedName = "UntitledDeck";
-                _logger.LogWarning("No suggested name found or invalid. Using fallback: {Fallback}", suggestedName);
             }
 
             string timestamp = DateTime.Now.ToString("dd-MM-yyyy_HH-mm-ss");
-
-            if (AppConfig.AutoUseSuggestedName)
-            {
-                _logger.LogInformation("AutoUseSuggestedName is enabled. Using suggested name without prompt.");
-                string fullNameAuto = $"{suggestedName}_{timestamp}";
-                return new PdfNameResult(fullNameAuto, suggestedName, timestamp);
-            }
-
-            _logger.LogInformation("Suggested PDF name: {Name}", suggestedName);
-            _logger.LogInformation("[Action Required] Enter PDF name (press Enter to accept suggested name):");
-
-            Console.Write("> ");
-            string? input = Console.ReadLine();
-
-            string finalBaseName = string.IsNullOrWhiteSpace(input)
-                ? suggestedName
-                : input.Trim();
-
-            finalBaseName = SanitizeFileName(finalBaseName);
-
-            if (string.IsNullOrWhiteSpace(finalBaseName))
-            {
-                _logger.LogWarning("User input was empty or invalid. Falling back to suggested name.");
-                finalBaseName = suggestedName;
-            }
-
-            string fullName = $"{finalBaseName}_{timestamp}";
-
-            _logger.LogInformation("Using PDF base name: {Name}", fullName);
-
-            return new PdfNameResult(fullName, finalBaseName, timestamp);
+            string fullName = $"{suggestedName}_{timestamp}";
+            return new PdfNameResult(fullName, suggestedName, timestamp);
         }
 
         private static string SanitizeFileName(string name)

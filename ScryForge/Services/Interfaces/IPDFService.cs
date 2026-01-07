@@ -4,9 +4,8 @@ namespace ScryForge.Services.Interfaces
 {
     public interface IPDFService
     {
-        Task RunAsync(string project, string pdfFileName, bool showOutput = true);
         Task<int> GetMaxCardsPerPage(string jsonFilePath);
-        Task GenerateMainPdfAsync(string baseName, IEnumerable<CardInfo> cards);
-        Task GenerateFlipsPdfAsync(string baseName);
+        Task<bool> GenerateMainPdfAsync(string baseName, IEnumerable<CardInfo> cards, bool showOutput = true);
+        Task<bool> GenerateFlipsPdfAsync(string baseName, bool showOutput = true);
     }
 }

@@ -1,4 +1,8 @@
 namespace ScryForge.Models
 {
-    public record EmptySlotsResult(bool ShouldStopPipeline, int EmptySlotsDefault, int EmptySlotsFlips, bool HasEmptySlots);
+    public record EmptySlotsResult(
+        bool HasEmptySlots,
+        int EmptySlotsDefault,
+        int EmptySlotsFlips
+    );
 }

@@ -4,6 +4,6 @@ namespace ScryForge.Services.Interfaces
 {
     public interface ICardCopyService
     {
-        void ProcessCards(List<CardInfo> cards);
+        ProcessCardsResult ProcessCards(List<CardInfo> cards);
     }
 }
