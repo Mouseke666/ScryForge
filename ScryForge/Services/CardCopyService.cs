@@ -12,26 +12,41 @@ namespace ScryForge.Services
         {
             int flipCount = 0;
             int singleCount = 0;
+            //int customCount = 0;
+            int totalCards = 0;
 
             Directory.CreateDirectory(AppConfig.FlipsFolder);
             Directory.CreateDirectory(AppConfig.PDFImagesFolder);
 
-            var flipCards = cards.Where(c => c.IsFlip && !string.Equals(c.SetCode, "CUSTOM", StringComparison.OrdinalIgnoreCase));
-            foreach (var card in flipCards)
+            foreach (var card in cards)
             {
-                ProcessFlipCard(card);
-                flipCount += card.Quantity;
+                totalCards += card.Quantity;
+
+                // if (string.Equals(card.SetCode, "CUSTOM", StringComparison.OrdinalIgnoreCase))
+                // {
+                //     customCount += card.Quantity;
+                //     continue;
+                // }
+
+                if (card.IsFlip)
+                {
+                    ProcessFlipCard(card);
+                    flipCount += card.Quantity;
+                }
+                else if (card.Quantity > 1)
+                {
+                    ProcessSingleCard(card);
+                    singleCount += card.Quantity;
+                }
             }
 
-            var singleCards = cards.Where(c => !c.IsFlip && !string.Equals(c.SetCode, "CUSTOM", StringComparison.OrdinalIgnoreCase) && c.Quantity > 1);
-            foreach (var card in singleCards)
-            {
-                ProcessSingleCard(card);
-                singleCount += card.Quantity;
-            }
-
-            return new ProcessCardsResult(cards.Count, flipCount, singleCount);
+            return new ProcessCardsResult(
+                TotalCards: totalCards,
+                FlipCardsProcessed: flipCount,
+                SingleCardsProcessed: singleCount
+            );
         }
+
 
         private void ProcessFlipCard(CardInfo card)
         {

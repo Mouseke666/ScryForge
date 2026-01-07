@@ -55,7 +55,7 @@ public class PipelineService(
 
     private void LogStep(ref int step, int total, string message)
     {
-        _logger.LogInformation("\n  Step {Step}/{Total}: {Message}\n", step++, total, message);
+        _logger.LogInformation("\nStep {Step}/{Total}: {Message}\n", step++, total, message);
     }
 
     private async Task RunPipelineAsync(CancellationToken ct)
@@ -171,7 +171,16 @@ public class PipelineService(
         }
 
         LogStep(ref step, totalSteps, "Parsing custom cards");
-        cards.AddRange(await _parser.ParseCustomCardsAsync(customCards));
+        List<CardInfo> parsedCustomCards = await _parser.ParseCustomCardsAsync(customCards);
+        if (parsedCustomCards.Count > 0)
+        {
+            cards.AddRange(parsedCustomCards);
+        }
+        else
+        {
+            _logger.LogInformation("No custom cards parsed");
+        }
+
 
         LogStep(ref step, totalSteps, "Processing cards");
         try
@@ -273,7 +282,10 @@ public class PipelineService(
     private bool HandleEmptySlots(EmptySlotsResult result)
     {
         if (!result.HasEmptySlots)
+        {
+            _logger.LogInformation("No empty slots detected in default or double-faced cards.");
             return false;
+        }
 
         if (AppConfig.AutoFillEmptySlots)
         {
