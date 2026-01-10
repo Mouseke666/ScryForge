@@ -271,11 +271,11 @@ public class PipelineService(
         _logger.LogInformation("Pipeline finished");
         _logger.LogInformation("Thank you for using ScryForge!\n");
 
-        // Pas dit echt helemaal aan het einde
         Console.ForegroundColor = ConsoleColor.Yellow;
         Console.WriteLine("Press any key to exit...");
         Console.ResetColor();
-        _ = Console.ReadLine();
+
+        _ = Console.ReadKey(true);
         Environment.Exit(0);
     }
 
