@@ -33,9 +33,12 @@ namespace ScryForge.Services
                     ProcessFlipCard(card);
                     flipCount += card.Quantity;
                 }
-                else if (card.Quantity > 1)
+                else
                 {
-                    ProcessSingleCard(card);
+                    if (card.Quantity > 1)
+                    {
+                        ProcessSingleCard(card);
+                    }
                     singleCount += card.Quantity;
                 }
             }

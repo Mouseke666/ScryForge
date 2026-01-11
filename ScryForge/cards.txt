@@ -1,9 +1,2 @@
-1 Brightclimb Pathway / Grimclimb Pathway (ZNR) 285
-1 Cragcrown Pathway / Timbercrown Pathway (ZNR) 287
-1 Elesh Norn / The Argent Etchings (MOM) 12
-1 Hengegate Pathway / Mistgate Pathway (KHM) 293
-1 Primal Amulet / Primal Wellspring (XLN) 243
-1 Ral, Monsoon Mage / Ral, Leyline Prodigy (MH3) 247
-1 Riverglide Pathway / Lavaglide Pathway (ZNR) 289
-1 Urabrask / The Great Work (MOM) 169
-1 Urabrask / The Great Work (MOM) 169
+1 Arcane Signet (ECC) 55
+2 Bloodline Keeper / Lord of Lineage (INR) 98
