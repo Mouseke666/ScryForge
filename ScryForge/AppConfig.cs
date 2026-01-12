@@ -116,8 +116,6 @@ namespace ScryForge
                     }
                 }
             }
-
-            logger?.LogInformation("Upscaler configuration validated successfully.");
         }
     }
 

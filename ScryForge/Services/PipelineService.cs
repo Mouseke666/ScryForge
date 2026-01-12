@@ -144,8 +144,13 @@ public class PipelineService(
 
         bool anyUpscaled = false;
 
+        int count = 0;
         foreach (var upscaler in AppConfig.Upscalers)
         {
+            if (count > 0)
+            {
+                Console.Write(Environment.NewLine);
+            }
             var cardsForThisUpscaler = scryfallCards
                 .Where(c =>
                     c.ReleasedAt.HasValue &&
@@ -162,6 +167,7 @@ public class PipelineService(
 
             if (upscaled)
                 anyUpscaled = true;
+            count++;
         }
 
         if (!anyUpscaled)
