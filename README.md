@@ -120,8 +120,6 @@ The tool runs asynchronously, and ScryForge merges stdout/stderr events to provi
 
 This automated workflow ensures fast, clean, and isolated image processing without accidentally upscaling unrelated files.
 
-
-
 ## Project Structure
 
 - **Services**
@@ -150,5 +148,6 @@ This automated workflow ensures fast, clean, and isolated image processing witho
    ```bash
    git clone https://github.com/yourusername/ScryForge.git
    cd ScryForge
+
 
 
