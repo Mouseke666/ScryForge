@@ -27,30 +27,70 @@ To use ScryForge, open your deck in Moxfield and export it as a text file. Copy 
   - **Important:** The filename after `__back_` must **exactly match** the corresponding front card filename, including the extension.
   - ScryForge will automatically pair front and back images based on this naming convention.
 
-## Upscaler Configuration
+## Image Upscaling Integration
 
-ScryForge allows full control over the settings of the upscaler for your cards. The configuration is located in `appsettings.json` under the `Upscaler` section and supports the following options:
+ScryForge now includes built-in support for automated batch upscaling of card images through an external upscaler executable (for example, Real-ESRGAN or similar tools).  
+This feature allows you to upscale all card images generated during the download process before they are used for PDF creation.
+
+### How It Works
+
+When enabled, ScryForge performs the following steps automatically:
+
+1. **Identifies all images belonging to the selected cards**  
+   Only files referenced by the cards’ `ImagePath` (or per-face image properties like `FrontImagePath` and `BackImagePath`) are considered for upscaling.
+
+2. **Temporarily isolates these images**  
+   - All non-card images inside `AppConfig.ScryForgeDownloaderPath` are temporarily moved to a `.temp` subfolder.  
+   - Only the actual card image files remain in the working directory for processing.
+
+3. **Runs the external upscaler**  
+   ScryForge invokes the tool defined in `AppConfig.UpscalerExe` with the configured model and scale.  
+   Output is written to `AppConfig.PDFImagesFolder`.
+
+4. **Restores the original folder contents**  
+   After upscaling completes, everything inside the temporary folder is moved back to `ScryForgeDownloaderPath`.
+
+5. **Progress reporting**  
+   The system parses the upscaler's stdout/stderr and matches progress lines to specific cards so that progress can be displayed accurately.
+
+### Configuration
+
+Add the following settings to your `appsettings.json` or environment configuration:
 
 ```json
 {
-  "Upscaler": {
-    "Model": "digital-art-4x",
-    "Scale": 4,
-    "Threads": 6
-  }
+  "UpscalerExe": "path/to/upscaler.exe",
+  "UpscalerModel": "realesrgan-x4plus",
+  "UpscalerScale": 4,
+  "ScryForgeDownloaderPath": "path/where/scryfall/images/are/downloaded",
+  "PDFImagesFolder": "path/where/upscaled/images/will/be/written"
 }
 ```
 
-### Fields
+#### Setting Descriptions
 
-- **Model** – The upscaler model to use (e.g., `digital-art-4x`).
-- **Scale** – The resolution multiplier (e.g., `2` or `4`).
-- **Threads** – The number of CPU threads the upscaler can use. This allows you to adjust performance depending on your system. By default, ScryForge uses all available cores.
+| Setting                     | Description |
+|----------------------------|-------------|
+| `UpscalerExe`              | Full path to the executable upscaling tool. Must exist; otherwise, upscaling is skipped. |
+| `UpscalerModel`            | Name of the model passed to the `-n` argument of the upscaler (e.g., `realesrgan-x4plus`, `uniscale-restore`). |
+| `UpscalerScale`            | Scale factor for the upscaler (passed via `-s`). |
+| `ScryForgeDownloaderPath`  | Directory containing all downloaded card images. Only files referenced by cards will be upscaled. |
+| `PDFImagesFolder`          | Target directory for the upscaled output. Created automatically if missing. |
 
-### Tips
+### Upscaler Invocation
 
-- Increase the number of threads on multi-core systems for faster processing.  
-- Reduce the number of threads on lighter systems to limit CPU usage.
+ScryForge generates a command similar to the following:
+
+```bash
+upscaler.exe -i "<ScryForgeDownloaderPath>" -o "<PDFImagesFolder>" -n <model> -s <scale> -v
+```
+
+The tool runs asynchronously, and ScryForge merges stdout/stderr events to provide detailed progress logging.
+
+---
+
+This automated workflow ensures fast, clean, and isolated image processing without accidentally upscaling unrelated files.
+
 
 ## Project Structure
 
@@ -80,3 +120,4 @@ ScryForge allows full control over the settings of the upscaler for your cards. 
    ```bash
    git clone https://github.com/yourusername/ScryForge.git
    cd ScryForge
+
