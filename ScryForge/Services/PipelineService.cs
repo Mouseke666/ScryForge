@@ -142,11 +142,41 @@ public class PipelineService(
 
         LogStep(ref step, totalSteps, "Upscaling images");
 
-        bool upscaled = await _upscaler.RunUpscalerForCardsAsync(scryfallCards);
-        if (!upscaled)
+        bool anyUpscaled = false;
+
+        foreach (var upscaler in AppConfig.Upscalers)
+        {
+            var cardsForThisUpscaler = scryfallCards
+                .Where(c =>
+                    c.ReleasedAt.HasValue &&
+                    (!upscaler.YearRange.From.HasValue || c.ReleasedAt.Value.Year >= upscaler.YearRange.From.Value) &&
+                    (!upscaler.YearRange.To.HasValue || c.ReleasedAt.Value.Year <= upscaler.YearRange.To.Value))
+                .ToList();
+
+            if (cardsForThisUpscaler.Count == 0)
+                continue;
+
+            _logger.LogInformation("Running upscaler {Model} on {Count} cards\n", upscaler.Model, cardsForThisUpscaler.Count);
+
+            bool upscaled = await _upscaler.RunUpscalerForCardsAsync(cardsForThisUpscaler, upscaler.Model, upscaler.Scale);
+
+            if (upscaled)
+                anyUpscaled = true;
+        }
+
+        if (!anyUpscaled)
         {
             _logger.LogInformation("No card images available to upscale. Skipping upscaling step.");
         }
+
+        //TODO: Loop door de upscalers
+        // AppConfig.Upscalers
+
+        // bool upscaled = await _upscaler.RunUpscalerForCardsAsync(scryfallCards);
+        // if (!upscaled)
+        // {
+        //     _logger.LogInformation("No card images available to upscale. Skipping upscaling step.");
+        // }
 
         LogStep(ref step, totalSteps, "Copy custom cards");
         await _customCardService.CopyCustomCardsAsync(customCards, AppConfig.PDFImagesFolder);

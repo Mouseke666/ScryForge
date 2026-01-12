@@ -4,6 +4,6 @@ namespace ScryForge.Services.Interfaces
 {
     public interface IUpscalerService
     {
-        Task<bool> RunUpscalerForCardsAsync(IReadOnlyList<ScryfallCard> cards);
+        Task<bool> RunUpscalerForCardsAsync(IReadOnlyList<ScryfallCard> cards, string model, int scale);
     }
 }

@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
 
 namespace ScryForge
@@ -15,31 +16,122 @@ namespace ScryForge
         public static readonly string FlipsFolder = Path.Combine(PDFImagesFolder, "flips");
         public static readonly string UpscalerPath = Path.Combine(BasePath, "Upscaler");
         public static readonly string UpscalerExe = Path.Combine(UpscalerPath, "realesrgan-ncnn-vulkan.exe");
-        public static readonly string PDFPath = Path.Combine(BasePath, "PDF");
-        public static readonly string PDFExe = Path.Combine(PDFPath, "proxy_pdf_cli.exe");
-        public static string UpscaleModel { get; private set; } = "digital-art-4x";
-        public static int UpscaleScale { get; private set; } = 4;
+        public static readonly string PDFExe = Path.Combine(PdfPath, "proxy_pdf_cli.exe");
+
+        public static List<UpscalerConfig> Upscalers { get; private set; } = [];
         public static bool AutoFillEmptySlots { get; private set; } = false;
         public static bool AutoUseSuggestedName { get; private set; } = false;
 
-        public static void Initialize(IConfiguration config)
+        public static void Initialize(IConfiguration config, ILogger? logger = null)
         {
-            UpscaleModel = config["Upscaler:Model"] ?? UpscaleModel;
-
-            if (int.TryParse(config["Upscaler:Scale"], out var scale))
+            string? autoFillValue = config["Pdf:AutoFillEmptySlots"];
+            if (!string.IsNullOrEmpty(autoFillValue))
             {
-                UpscaleScale = scale;
+                if (bool.TryParse(autoFillValue, out var autoFill))
+                {
+                    AutoFillEmptySlots = autoFill;
+                }
+                else
+                {
+                    AutoFillEmptySlots = false;
+                    logger?.LogWarning(
+                        "Invalid boolean value for Pdf:AutoFillEmptySlots: '{Value}'. Defaulting to false.",
+                        autoFillValue
+                    );
+                }
             }
 
-            if (bool.TryParse(config["Pdf:AutoFillEmptySlots"], out var autoFill))
+            string? autoUseNameValue = config["Pdf:AutoUseSuggestedName"];
+            if (!string.IsNullOrEmpty(autoUseNameValue))
             {
-                AutoFillEmptySlots = autoFill;
+                if (bool.TryParse(autoUseNameValue, out var autoName))
+                {
+                    AutoUseSuggestedName = autoName;
+                }
+                else
+                {
+                    AutoUseSuggestedName = false;
+                    logger?.LogWarning(
+                        "Invalid boolean value for Pdf:AutoUseSuggestedName: '{Value}'. Defaulting to false.",
+                        autoUseNameValue
+                    );
+                }
             }
 
-            if (bool.TryParse(config["Pdf:AutoUseSuggestedName"], out var autoName))
+            var upscalerSection = config.GetSection("Upscalers");
+            if (upscalerSection.Exists())
             {
-                AutoUseSuggestedName = autoName;
+                Upscalers = upscalerSection.Get<List<UpscalerConfig>>() ?? new List<UpscalerConfig>();
             }
+
+            ValidateUpscalerConfigs(logger);
         }
+
+        private static void ValidateUpscalerConfigs(ILogger? logger)
+        {
+            if (Upscalers == null || Upscalers.Count == 0)
+                throw new InvalidOperationException("At least one UpscalerConfig must be defined.");
+
+            var ordered = Upscalers
+                .OrderBy(u => u.YearRange.From ?? int.MinValue)
+                .ToList();
+
+            var first = ordered[0];
+            if (first.YearRange.From != null)
+                throw new InvalidOperationException(
+                    $"The first UpscalerConfig ('{first.Name}') must have YearRange.From = null."
+                );
+
+            for (int i = 0; i < ordered.Count; i++)
+            {
+                var current = ordered[i];
+
+                if (current.YearRange.From.HasValue && current.YearRange.To.HasValue &&
+                    current.YearRange.From.Value > current.YearRange.To.Value)
+                {
+                    throw new InvalidOperationException(
+                        $"Invalid year range in '{current.Name}': From cannot be greater than To."
+                    );
+                }
+
+                if (i > 0)
+                {
+                    var prev = ordered[i - 1];
+
+                    if (!prev.YearRange.To.HasValue)
+                    {
+                        throw new InvalidOperationException(
+                            $"'{prev.Name}' ends at null (open-ended). No ranges may follow after an open-ended range."
+                        );
+                    }
+
+                    int expectedFrom = prev.YearRange.To.Value + 1;
+
+                    if (!current.YearRange.From.HasValue || current.YearRange.From.Value != expectedFrom)
+                    {
+                        throw new InvalidOperationException(
+                            $"Range of '{current.Name}' must start at {expectedFrom}, but starts at " +
+                            (current.YearRange.From?.ToString() ?? "null") + "."
+                        );
+                    }
+                }
+            }
+
+            logger?.LogInformation("Upscaler configuration validated successfully.");
+        }
+    }
+
+    public class UpscalerConfig
+    {
+        public string Name { get; set; } = string.Empty;
+        public string Model { get; set; } = "digital-art-4x";
+        public int Scale { get; set; } = 4;
+        public YearRangeConfig YearRange { get; set; } = new YearRangeConfig();
+    }
+
+    public class YearRangeConfig
+    {
+        public int? From { get; set; }
+        public int? To { get; set; }
     }
 }

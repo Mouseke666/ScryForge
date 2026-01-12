@@ -37,7 +37,7 @@ namespace ScryForge.Services
                 {
                     if (card.Quantity > 1)
                     {
-                        ProcessSingleCard(card);
+                        ProcessSingleSidedCardCopies(card);
                     }
                     singleCount += card.Quantity;
                 }
@@ -99,7 +99,7 @@ namespace ScryForge.Services
             }
         }
 
-        private void ProcessSingleCard(CardInfo card)
+        private void ProcessSingleSidedCardCopies(CardInfo card)
         {
             string sourceFile = Path.Combine(AppConfig.PDFImagesFolder, card.FrontFileName);
             if (!File.Exists(sourceFile))

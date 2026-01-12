@@ -127,6 +127,7 @@ public class ScryFallDownloaderService : IDownloaderService
         CancellationToken ct)
     {
         string? json = await FetchCardJsonWithRetryAsync(new CardRequest(name, set, cn), ct);
+
         if (json == null)
             return;
 
@@ -145,26 +146,40 @@ public class ScryFallDownloaderService : IDownloaderService
             using var doc = JsonDocument.Parse(json);
             var root = doc.RootElement;
 
+            DateTime? releasedAt = null;
+            if (root.TryGetProperty("released_at", out var releasedAtElement))
+            {
+                if (DateTime.TryParse(releasedAtElement.GetString(), out var parsedDate))
+                    releasedAt = parsedDate;
+            }
+
+            ScryfallCard? card = null;
+
             if (root.TryGetProperty("id", out _))
             {
-                return JsonSerializer.Deserialize(json, ScryfallJsonContext.Default.ScryfallCard);
+                card = JsonSerializer.Deserialize(json, ScryfallJsonContext.Default.ScryfallCard);
             }
-
-            if (root.TryGetProperty("data", out var dataElement) &&
-                dataElement.ValueKind == JsonValueKind.Array &&
-                dataElement.GetArrayLength() > 0)
+            else if (root.TryGetProperty("data", out var dataElement) &&
+                     dataElement.ValueKind == JsonValueKind.Array &&
+                     dataElement.GetArrayLength() > 0)
             {
                 var firstCardJson = dataElement[0].GetRawText();
-                return JsonSerializer.Deserialize(firstCardJson, ScryfallJsonContext.Default.ScryfallCard);
+                card = JsonSerializer.Deserialize(firstCardJson, ScryfallJsonContext.Default.ScryfallCard);
             }
 
-            return null;
+            if (card != null)
+            {
+                card.ReleasedAt = releasedAt;
+            }
+
+            return card;
         }
         catch
         {
             return null;
         }
     }
+
 
     private async Task<string?> FetchCardJsonWithRetryAsync(
         CardRequest req,

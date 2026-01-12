@@ -9,7 +9,7 @@ namespace ScryForge.Services
     {
         private readonly ILogger<UpscalerService> _logger = logger;
 
-        public async Task<bool> RunUpscalerForCardsAsync(IReadOnlyList<ScryfallCard> cards)
+        public async Task<bool> RunUpscalerForCardsAsync(IReadOnlyList<ScryfallCard> cards, string model, int scale)
         {
             if (cards == null || cards.Count == 0)
             {
@@ -28,30 +28,46 @@ namespace ScryForge.Services
                 return false;
             }
 
-            var args = $"-i \"{inputFolder}\" -o \"{outputFolder}\" -n {AppConfig.UpscaleModel} -s {AppConfig.UpscaleScale} -v";
-
-            var psi = new ProcessStartInfo
-            {
-                FileName = exe,
-                Arguments = args,
-                WorkingDirectory = Path.GetDirectoryName(exe)!,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true
-            };
-
-            int currentImage = 0;
-            int totalImages = cards.Sum(c =>
-                (c.FrontImagePath != null ? 1 : 0) +
-                (c.BackImagePath != null ? 1 : 0));
+            string tempFolder = Path.Combine(inputFolder, "_temp_isolation");
+            Directory.CreateDirectory(tempFolder);
 
             try
             {
+                HashSet<string> allowedFiles = cards
+                    .Select(c => c.ImagePath)
+                    .Where(p => !string.IsNullOrWhiteSpace(p))
+                    .Select(p => Path.GetFileName(p)!)
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+                foreach (var file in Directory.GetFiles(inputFolder))
+                {
+                    var name = Path.GetFileName(file);
+                    if (!allowedFiles.Contains(name))
+                    {
+                        var dest = Path.Combine(tempFolder, name);
+                        File.Move(file, dest, overwrite: true);
+                    }
+                }
+
+                var args = $"-i \"{inputFolder}\" -o \"{outputFolder}\" -n {model} -s {scale} -v";
+
+                var psi = new ProcessStartInfo
+                {
+                    FileName = exe,
+                    Arguments = args,
+                    WorkingDirectory = Path.GetDirectoryName(exe)!,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true
+                };
+
+                int currentImage = 0;
+                int totalImages = cards.Count(c => !string.IsNullOrWhiteSpace(c.ImagePath));
+
                 using var process = new Process { StartInfo = psi };
                 process.Start();
 
-                // StdOut task
                 var stdoutTask = Task.Run(async () =>
                 {
                     string? line;
@@ -61,7 +77,6 @@ namespace ScryForge.Services
                     }
                 });
 
-                // StdErr task
                 var stderrTask = Task.Run(async () =>
                 {
                     string? line;
@@ -96,25 +111,35 @@ namespace ScryForge.Services
                 _logger.LogError(ex, "Unexpected error during batch upscaling");
                 return false;
             }
+            finally
+            {
+                foreach (var file in Directory.GetFiles(tempFolder))
+                {
+                    var dest = Path.Combine(inputFolder, Path.GetFileName(file));
+                    File.Move(file, dest, overwrite: true);
+                }
+
+                try
+                {
+                    Directory.Delete(tempFolder, recursive: true);
+                }
+                catch { /* Niet kritisch */ }
+            }
         }
 
         private void ProcessUpscalerLine(string line, IReadOnlyList<ScryfallCard> cards, ref int currentImage, int totalImages)
         {
-            // Alleen lines met "-> ... done" zijn relevant
             if (!line.Contains("->") || !line.Contains("done")) return;
 
-            // Haal bestandsnaam van input af
             string inputFile = line.Split("->")[0].Trim();
             string fileName = Path.GetFileName(inputFile);
 
-            // Zoek bijpassende card
             var card = cards.FirstOrDefault(c =>
                 Path.GetFileName(c.FrontImagePath) == fileName ||
                 Path.GetFileName(c.BackImagePath) == fileName);
 
             if (card == null) return;
 
-            // Bepaal faces van deze kaart
             var cardFaces = new List<(string Path, string Name)>();
             if (!string.IsNullOrWhiteSpace(card.FrontImagePath))
                 cardFaces.Add((card.FrontImagePath, "Front"));
@@ -127,7 +152,6 @@ namespace ScryForge.Services
 
             int globalIndex = Interlocked.Increment(ref currentImage);
 
-            // Logging: alleen (Front/Back) tonen als er daadwerkelijk twee faces zijn
             _logger.LogInformation(
                 totalFaces > 1
                     ? "Upscaling [{Current}/{Total}] - {CardName} ({Face})"
