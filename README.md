@@ -53,29 +53,58 @@ When enabled, ScryForge performs the following steps automatically:
 5. **Progress reporting**  
    The system parses the upscaler's stdout/stderr and matches progress lines to specific cards so that progress can be displayed accurately.
 
+---
+
+### Default Configuration
+
+By default, ScryForge uses the following upscaler setup:
+
+| Upscaler Name        | Model Name         | Scale | Year Range      | Description |
+|---------------------|-----------------|-------|----------------|-------------|
+| Uniscale Restore     | `uniscale-restore` | 4     | From: null / To: 2009 | Used for older cards (before 2010). Best for restoring lines and color on old Magic cards. |
+| Digital Art 4x       | `digital-art-4x`  | 4     | From: 2010 / To: null | Used for modern cards. Provides stylized, high-fidelity upscaling for newer illustrations. |
+
+This ensures that:
+
+- Cards released **up to and including 2009** are processed with Uniscale Restore for gentle restoration.  
+- Cards released **from 2010 onwards** are processed with Digital Art 4x for modern, high-fidelity results.  
+
+---
+
 ### Configuration
 
-Add the following settings to your `appsettings.json` or environment configuration:
+Upscalers can be customized in `appsettings.json` under the `Upscalers` section. Example:
 
 ```json
 {
-  "UpscalerExe": "path/to/upscaler.exe",
-  "UpscalerModel": "realesrgan-x4plus",
-  "UpscalerScale": 4,
-  "ScryForgeDownloaderPath": "path/where/scryfall/images/are/downloaded",
-  "PDFImagesFolder": "path/where/upscaled/images/will/be/written"
+  "Upscalers": [
+    {
+      "Name": "Uniscale Restore",
+      "Model": "uniscale-restore",
+      "Scale": 4,
+      "YearRange": { "From": null, "To": 2009 }
+    },
+    {
+      "Name": "Digital Art 4x",
+      "Model": "digital-art-4x",
+      "Scale": 4,
+      "YearRange": { "From": 2010, "To": null }
+    }
+  ]
 }
 ```
 
 #### Setting Descriptions
 
-| Setting                     | Description |
-|----------------------------|-------------|
-| `UpscalerExe`              | Full path to the executable upscaling tool. Must exist; otherwise, upscaling is skipped. |
-| `UpscalerModel`            | Name of the model passed to the `-n` argument of the upscaler (e.g., `realesrgan-x4plus`, `uniscale-restore`). |
-| `UpscalerScale`            | Scale factor for the upscaler (passed via `-s`). |
-| `ScryForgeDownloaderPath`  | Directory containing all downloaded card images. Only files referenced by cards will be upscaled. |
-| `PDFImagesFolder`          | Target directory for the upscaled output. Created automatically if missing. |
+| Field          | Type    | Description |
+|----------------|--------|-------------|
+| `Name`         | string | Logical name of the upscaler profile. |
+| `Model`        | string | The model name passed to the external upscaler executable. |
+| `Scale`        | int    | Upscale factor (e.g., 2 or 4). |
+| `YearRange.From` | int?  | Start year (inclusive). Use `null` for “from the beginning”. |
+| `YearRange.To`   | int?  | End year (inclusive). Use `null` for “up to indefinite”. |
+
+---
 
 ### Upscaler Invocation
 
@@ -90,6 +119,7 @@ The tool runs asynchronously, and ScryForge merges stdout/stderr events to provi
 ---
 
 This automated workflow ensures fast, clean, and isolated image processing without accidentally upscaling unrelated files.
+
 
 
 ## Project Structure
@@ -120,4 +150,5 @@ This automated workflow ensures fast, clean, and isolated image processing witho
    ```bash
    git clone https://github.com/yourusername/ScryForge.git
    cd ScryForge
+
 
