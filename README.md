@@ -27,30 +27,98 @@ To use ScryForge, open your deck in Moxfield and export it as a text file. Copy 
   - **Important:** The filename after `__back_` must **exactly match** the corresponding front card filename, including the extension.
   - ScryForge will automatically pair front and back images based on this naming convention.
 
-## Upscaler Configuration
+## Image Upscaling Integration
 
-ScryForge allows full control over the settings of the upscaler for your cards. The configuration is located in `appsettings.json` under the `Upscaler` section and supports the following options:
+ScryForge now includes built-in support for automated batch upscaling of card images through an external upscaler executable (for example, Real-ESRGAN or similar tools).  
+This feature allows you to upscale all card images generated during the download process before they are used for PDF creation.
+
+### How It Works
+
+When enabled, ScryForge performs the following steps automatically:
+
+1. **Identifies all images belonging to the selected cards**  
+   Only files referenced by the cards’ `ImagePath` (or per-face image properties like `FrontImagePath` and `BackImagePath`) are considered for upscaling.
+
+2. **Temporarily isolates these images**  
+   - All non-card images inside `AppConfig.ScryForgeDownloaderPath` are temporarily moved to a `.temp` subfolder.  
+   - Only the actual card image files remain in the working directory for processing.
+
+3. **Runs the external upscaler**  
+   ScryForge invokes the tool defined in `AppConfig.UpscalerExe` with the configured model and scale.  
+   Output is written to `AppConfig.PDFImagesFolder`.
+
+4. **Restores the original folder contents**  
+   After upscaling completes, everything inside the temporary folder is moved back to `ScryForgeDownloaderPath`.
+
+5. **Progress reporting**  
+   The system parses the upscaler's stdout/stderr and matches progress lines to specific cards so that progress can be displayed accurately.
+
+---
+
+### Default Configuration
+
+By default, ScryForge uses the following upscaler setup:
+
+| Upscaler Name        | Model Name         | Scale | Year Range      | Description |
+|---------------------|-----------------|-------|----------------|-------------|
+| Uniscale Restore     | `uniscale-restore` | 4     | From: null / To: 2009 | Used for older cards (before 2010). Best for restoring lines and color on old Magic cards. |
+| Digital Art 4x       | `digital-art-4x`  | 4     | From: 2010 / To: null | Used for modern cards. Provides stylized, high-fidelity upscaling for newer illustrations. |
+
+This ensures that:
+
+- Cards released **up to and including 2009** are processed with Uniscale Restore for gentle restoration.  
+- Cards released **from 2010 onwards** are processed with Digital Art 4x for modern, high-fidelity results.  
+
+---
+
+### Configuration
+
+Upscalers can be customized in `appsettings.json` under the `Upscalers` section. Example:
 
 ```json
 {
-  "Upscaler": {
-    "Model": "digital-art-4x",
-    "Scale": 4,
-    "Threads": 6
-  }
+  "Upscalers": [
+    {
+      "Name": "Uniscale Restore",
+      "Model": "uniscale-restore",
+      "Scale": 4,
+      "YearRange": { "From": null, "To": 2009 }
+    },
+    {
+      "Name": "Digital Art 4x",
+      "Model": "digital-art-4x",
+      "Scale": 4,
+      "YearRange": { "From": 2010, "To": null }
+    }
+  ]
 }
 ```
 
-### Fields
+#### Setting Descriptions
 
-- **Model** – The upscaler model to use (e.g., `digital-art-4x`).
-- **Scale** – The resolution multiplier (e.g., `2` or `4`).
-- **Threads** – The number of CPU threads the upscaler can use. This allows you to adjust performance depending on your system. By default, ScryForge uses all available cores.
+| Field          | Type    | Description |
+|----------------|--------|-------------|
+| `Name`         | string | Logical name of the upscaler profile. |
+| `Model`        | string | The model name passed to the external upscaler executable. |
+| `Scale`        | int    | Upscale factor (e.g., 2 or 4). |
+| `YearRange.From` | int?  | Start year (inclusive). Use `null` for “from the beginning”. |
+| `YearRange.To`   | int?  | End year (inclusive). Use `null` for “up to indefinite”. |
 
-### Tips
+---
 
-- Increase the number of threads on multi-core systems for faster processing.  
-- Reduce the number of threads on lighter systems to limit CPU usage.
+### Upscaler Invocation
+
+ScryForge generates a command similar to the following:
+
+```bash
+upscaler.exe -i "<ScryForgeDownloaderPath>" -o "<PDFImagesFolder>" -n <model> -s <scale> -v
+```
+
+The tool runs asynchronously, and ScryForge merges stdout/stderr events to provide detailed progress logging.
+
+---
+
+This automated workflow ensures fast, clean, and isolated image processing without accidentally upscaling unrelated files.
 
 ## Project Structure
 
@@ -80,3 +148,6 @@ ScryForge allows full control over the settings of the upscaler for your cards. 
    ```bash
    git clone https://github.com/yourusername/ScryForge.git
    cd ScryForge
+
+
+
