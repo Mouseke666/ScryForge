@@ -142,21 +142,31 @@ public class PipelineService(
 
         LogStep(ref step, totalSteps, "Upscaling images");
 
+        var lastUpscaler = AppConfig.Upscalers.Last();
+        var cardsWithoutReleaseDate = scryfallCards.Where(c => !c.ReleasedAt.HasValue).ToList();
+        int count = 0;
         bool anyUpscaled = false;
 
-        int count = 0;
         foreach (var upscaler in AppConfig.Upscalers)
         {
             if (count > 0)
             {
                 Console.Write(Environment.NewLine);
             }
+
+            // Alleen kaarten binnen het jaar bereik
             var cardsForThisUpscaler = scryfallCards
                 .Where(c =>
                     c.ReleasedAt.HasValue &&
                     (!upscaler.YearRange.From.HasValue || c.ReleasedAt.Value.Year >= upscaler.YearRange.From.Value) &&
                     (!upscaler.YearRange.To.HasValue || c.ReleasedAt.Value.Year <= upscaler.YearRange.To.Value))
                 .ToList();
+
+            // Voeg kaarten zonder ReleasedAt alleen toe voor de laatste upscaler
+            if (upscaler == lastUpscaler)
+            {
+                cardsForThisUpscaler.AddRange(cardsWithoutReleaseDate);
+            }
 
             if (cardsForThisUpscaler.Count == 0)
                 continue;
@@ -167,6 +177,7 @@ public class PipelineService(
 
             if (upscaled)
                 anyUpscaled = true;
+
             count++;
         }
 
