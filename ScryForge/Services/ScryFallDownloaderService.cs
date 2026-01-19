@@ -51,6 +51,9 @@ public class ScryFallDownloaderService : IDownloaderService
             ct.ThrowIfCancellationRequested();
 
             string line = rawLine.Trim();
+            if (line == "SIDEBOARD:")
+                continue;
+
             if (string.IsNullOrWhiteSpace(line))
                 continue;
 
