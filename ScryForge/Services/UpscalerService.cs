@@ -2,6 +2,7 @@ using System.Diagnostics;
 using ScryForge.Models.Scryfall;
 using Microsoft.Extensions.Logging;
 using ScryForge.Services.Interfaces;
+using System.Text.RegularExpressions;
 
 namespace ScryForge.Services
 {
@@ -99,8 +100,7 @@ namespace ScryForge.Services
                     {
                         if (string.IsNullOrWhiteSpace(line)) continue;
 
-                        if (line.Contains("error", StringComparison.OrdinalIgnoreCase) ||
-                            line.Contains("fail", StringComparison.OrdinalIgnoreCase))
+                        if (Regex.IsMatch(line, @"\berror\b", RegexOptions.IgnoreCase) || Regex.IsMatch(line, @"\bfail\b", RegexOptions.IgnoreCase))
                         {
                             _logger.LogError(line);
                             continue;
