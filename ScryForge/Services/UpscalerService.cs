@@ -33,10 +33,25 @@ namespace ScryForge.Services
 
             try
             {
+                // HashSet<string> allowedFiles = cards
+                //     .Select(c => c.ImagePath)
+                //     .Where(p => !string.IsNullOrWhiteSpace(p))
+                //     .Select(p => Path.GetFileName(p)!)
+                //     .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
                 HashSet<string> allowedFiles = cards
-                    .Select(c => c.ImagePath)
-                    .Where(p => !string.IsNullOrWhiteSpace(p))
-                    .Select(p => Path.GetFileName(p)!)
+                    .SelectMany(c =>
+                    {
+                        var files = new List<string>();
+
+                        if (!string.IsNullOrWhiteSpace(c.FrontImagePath))
+                            files.Add(Path.GetFileName(c.FrontImagePath)!);
+
+                        if (!string.IsNullOrWhiteSpace(c.BackImagePath))
+                            files.Add(Path.GetFileName(c.BackImagePath)!);
+
+                        return files;
+                    })
                     .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
                 foreach (var file in Directory.GetFiles(inputFolder))
