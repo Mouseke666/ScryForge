@@ -31,7 +31,8 @@ namespace ScryForge.Services
 
             foreach (var rawLine in lines)
             {
-                var line = Regex.Replace(rawLine, @"\*F\*\s*$", "", RegexOptions.IgnoreCase).Trim();
+                var line = Regex.Replace(rawLine, @"\*(F|E)\*\s*$", "", RegexOptions.IgnoreCase).Trim();
+
                 if (string.IsNullOrWhiteSpace(line))
                 {
                     continue;
@@ -58,6 +59,7 @@ namespace ScryForge.Services
                 var key = (name, set, number);
                 aggregated[key] = aggregated.TryGetValue(key, out var existing) ? existing + quantity : quantity;
             }
+
 
             foreach (var entry in aggregated)
             {

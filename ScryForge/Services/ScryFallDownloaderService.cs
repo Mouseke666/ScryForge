@@ -297,19 +297,14 @@ public class ScryFallDownloaderService : IDownloaderService
         ?? u.Small
         ?? throw new InvalidOperationException("No valid Scryfall image URL found");
 
-    private static bool TryParseLine(
-        string line,
-        out int quantity,
-        out string name,
-        out string? setCode,
-        out string? collectorNumber)
+    private static bool TryParseLine(string line, out int quantity, out string name, out string? setCode, out string? collectorNumber)
     {
         quantity = 1;
         name = "";
         setCode = null;
         collectorNumber = null;
 
-        line = Regex.Replace(line, @"\*F\*\s*$", "", RegexOptions.IgnoreCase).Trim();
+        line = Regex.Replace(line, @"\*(F|E)\*\s*$", "", RegexOptions.IgnoreCase).Trim();
 
         var match = Regex.Match(
             line,
