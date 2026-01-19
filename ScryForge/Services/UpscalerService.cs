@@ -79,7 +79,13 @@ namespace ScryForge.Services
                 };
 
                 int currentImage = 0;
-                int totalImages = cards.Count(c => !string.IsNullOrWhiteSpace(c.ImagePath));
+                int totalImages = cards.Sum(c =>
+                {
+                    int count = 0;
+                    if (!string.IsNullOrWhiteSpace(c.FrontImagePath)) count++;
+                    if (!string.IsNullOrWhiteSpace(c.BackImagePath)) count++;
+                    return count;
+                });
 
                 using var process = new Process { StartInfo = psi };
                 process.Start();
