@@ -15,7 +15,7 @@ namespace ScryForge.Models.Scryfall
         [JsonPropertyName("released_at")]
         public DateTime? ReleasedAt { get; set; } // nu wél toewijsbaar
 
-        public bool IsDoubleFaced => Layout is "flip" or "transform" or "modal_dfc";
+        public bool IsDoubleFaced => Layout is "flip" or "transform" or "modal_dfc" or "double_faced_token";
         public int Quantity { get; set; } = 1;
         public string? FrontImagePath { get; set; }
         public string? BackImagePath { get; set; }
