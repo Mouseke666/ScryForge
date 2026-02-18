@@ -26,7 +26,7 @@ public class ScryFallDownloaderService : IDownloaderService
 
         _http = httpClientFactory.CreateClient("Scryfall");
         _http.DefaultRequestHeaders.UserAgent.ParseAdd("ScryForge/1.0 (jouw@email.com)");
-
+        _http.DefaultRequestHeaders.Accept.ParseAdd("application/json");
         _outputFolder = AppConfig.ScryForgeDownloaderPath;
         Directory.CreateDirectory(_outputFolder);
     }
