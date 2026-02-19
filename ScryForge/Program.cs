@@ -1,4 +1,5 @@
 ﻿using ScryForge;
+using System.Text;
 using System.Text.Json;
 using ScryForge.Logging;
 using ScryForge.Services;
@@ -13,6 +14,8 @@ internal class Program
 {
     private static async Task Main(string[] args)
     {
+        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+
         var builder = Host.CreateApplicationBuilder(args);
 
         ConfigureLogging(builder);
@@ -21,13 +24,16 @@ internal class Program
         {
             logging.AddConsole(options => options.FormatterName = "clean");
         });
+
         ILogger logger = loggerFactory.CreateLogger<Program>();
 
         var configuration = LoadConfiguration(builder.Logging, logger);
         AppConfig.Initialize(configuration, logger);
         RegisterServices(builder);
+
         await builder.Build().RunAsync();
     }
+
 
     private static void ConfigureLogging(HostApplicationBuilder builder)
     {

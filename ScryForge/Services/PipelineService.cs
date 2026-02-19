@@ -154,7 +154,6 @@ public class PipelineService(
                 Console.Write(Environment.NewLine);
             }
 
-            // Alleen kaarten binnen het jaar bereik
             var cardsForThisUpscaler = scryfallCards
                 .Where(c =>
                     c.ReleasedAt.HasValue &&
@@ -162,7 +161,6 @@ public class PipelineService(
                     (!upscaler.YearRange.To.HasValue || c.ReleasedAt.Value.Year <= upscaler.YearRange.To.Value))
                 .ToList();
 
-            // Voeg kaarten zonder ReleasedAt alleen toe voor de laatste upscaler
             if (upscaler == lastUpscaler)
             {
                 cardsForThisUpscaler.AddRange(cardsWithoutReleaseDate);
@@ -185,15 +183,6 @@ public class PipelineService(
         {
             _logger.LogInformation("No card images available to upscale. Skipping upscaling step.");
         }
-
-        //TODO: Loop door de upscalers
-        // AppConfig.Upscalers
-
-        // bool upscaled = await _upscaler.RunUpscalerForCardsAsync(scryfallCards);
-        // if (!upscaled)
-        // {
-        //     _logger.LogInformation("No card images available to upscale. Skipping upscaling step.");
-        // }
 
         LogStep(ref step, totalSteps, "Copy custom cards");
         await _customCardService.CopyCustomCardsAsync(customCards, AppConfig.PDFImagesFolder);

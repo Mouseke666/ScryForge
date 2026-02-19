@@ -3,6 +3,7 @@ using ScryForge.Models.Scryfall;
 using Microsoft.Extensions.Logging;
 using ScryForge.Services.Interfaces;
 using System.Text.RegularExpressions;
+using System.Text;
 
 namespace ScryForge.Services
 {
@@ -34,12 +35,6 @@ namespace ScryForge.Services
 
             try
             {
-                // HashSet<string> allowedFiles = cards
-                //     .Select(c => c.ImagePath)
-                //     .Where(p => !string.IsNullOrWhiteSpace(p))
-                //     .Select(p => Path.GetFileName(p)!)
-                //     .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
                 HashSet<string> allowedFiles = cards
                     .SelectMany(c =>
                     {
@@ -154,12 +149,14 @@ namespace ScryForge.Services
 
             string inputFile = line.Split("->")[0].Trim();
             string fileName = Path.GetFileName(inputFile);
+            fileName = FixEncoding(fileName);  // hier ontstaat �
 
             var card = cards.FirstOrDefault(c =>
-                Path.GetFileName(c.FrontImagePath) == fileName ||
-                Path.GetFileName(c.BackImagePath) == fileName);
+                FileNameMatches(Path.GetFileName(c.FrontImagePath), fileName) ||
+                FileNameMatches(Path.GetFileName(c.BackImagePath), fileName));
 
-            if (card == null) return;
+            if (card == null)
+                return;
 
             var cardFaces = new List<(string Path, string Name)>();
             if (!string.IsNullOrWhiteSpace(card.FrontImagePath))
@@ -168,7 +165,12 @@ namespace ScryForge.Services
                 cardFaces.Add((card.BackImagePath, "Back"));
 
             int totalFaces = cardFaces.Count;
-            int faceIndex = cardFaces.FindIndex(f => Path.GetFileName(f.Path) == fileName) + 1;
+            int faceIndex = cardFaces.FindIndex(f => FileNameMatches(Path.GetFileName(f.Path), fileName));
+
+            if (faceIndex == -1)
+                return;
+
+            faceIndex += 1;
             string faceName = cardFaces[faceIndex - 1].Name;
 
             int globalIndex = Interlocked.Increment(ref currentImage);
@@ -182,6 +184,37 @@ namespace ScryForge.Services
                 $"{card.Name}{(totalFaces > 1 ? $" // {card.CardFaces?[1].Name}" : string.Empty)}",
                 faceName
             );
+        }
+
+        private static bool FileNameMatches(string? correct, string? buggy)
+        {
+            if (string.IsNullOrEmpty(correct) || string.IsNullOrEmpty(buggy))
+                return false;
+
+            if (correct.Length != buggy.Length)
+                return false;
+
+            for (int i = 0; i < correct.Length; i++)
+            {
+                char c1 = correct[i];
+                char c2 = buggy[i];
+
+                if (c1 == c2)
+                    continue;
+
+                if (c1 == '\uFFFD' || c2 == '\uFFFD')
+                    continue;
+
+                return false;
+            }
+
+            return true;
+        }
+
+        private static string FixEncoding(string input)
+        {
+            var bytes = Encoding.GetEncoding(1252).GetBytes(input);
+            return Encoding.UTF8.GetString(bytes);
         }
     }
 }
