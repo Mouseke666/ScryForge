@@ -1,6 +1,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using ScryForge.Models;
 
 namespace ScryForge.Services.Interfaces
 {
@@ -20,5 +21,6 @@ namespace ScryForge.Services.Interfaces
             List<string> decklistLines,
             List<string>? commanders = null,
             CancellationToken ct = default);
+        Task<CommanderSpellbookResult?> FindMyCombosSimpleAsync(List<string> decklistLines, List<string>? commanders = null, CancellationToken ct = default);
     }
 }
