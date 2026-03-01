@@ -3,6 +3,7 @@ using ScryForge.Models.Scryfall;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using ScryForge.Services.Interfaces;
+using System.Diagnostics;
 
 namespace ScryForge.Services;
 
@@ -18,7 +19,8 @@ public class PipelineService(
     IPDFOpenService openPdf,
     IEmptySlotsService emptySlots,
     IPDFNameService pdfNameService,
-    ICustomCardService customCardService) : BackgroundService
+    ICustomCardService customCardService,
+    ICommanderSpellbookService commanderSpellbookService) : BackgroundService
 {
     private readonly ILogger<PipelineService> _logger = logger;
     private readonly ICleanupService _cleanup = cleanup;
@@ -32,7 +34,7 @@ public class PipelineService(
     private readonly IEmptySlotsService _emptySlots = emptySlots;
     private readonly IPDFNameService _pdfNameService = pdfNameService;
     private readonly ICustomCardService _customCardService = customCardService;
-
+    private readonly ICommanderSpellbookService _commanderSpellbookService = commanderSpellbookService;
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         _logger.LogInformation($"{AppVersion.GetFull()} - PipelineService started");
@@ -83,6 +85,14 @@ public class PipelineService(
             _logger.LogError(ex, "Fetching Scryfall cards failed");
             return;
         }
+
+        // scryfallCards is IReadOnlyList<ScryfallCard>
+        var decklistLines = scryfallCards
+            .Select(c => c.Name)
+            .ToList();
+
+        // Daarna de service aanroepen
+        string? combosJson = await _commanderSpellbookService.FindMyCombosAsync(decklistLines);
 
         IReadOnlyList<CustomCard> customCards = await _customCardService.FetchCustomCardsAsync(AppConfig.CustomFolder);
 
