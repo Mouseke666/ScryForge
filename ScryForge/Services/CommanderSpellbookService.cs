@@ -52,12 +52,11 @@ namespace ScryForge.Services
                 }
 
                 var json = await response.Content.ReadAsStringAsync(ct);
-                Debug.Write(json);
                 return json;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Exception when calling find-my-combos");
+                _logger.LogError(ex, $"Exception when calling find-my-combos ({ex.Message})");
                 return null;
             }
         }
