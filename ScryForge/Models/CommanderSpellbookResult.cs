@@ -13,6 +13,18 @@ public class CommanderSpellbookResult
     public List<ComboDetail> ControlSomeOpponentsCombos { get; set; } = new();
     public List<ComboDetail> SkipTurnsCombos { get; set; } = new();
     public List<ComboDetail> TwoCardCombos { get; set; } = new();
+
+    public bool IsEmpty =>
+        GameChangerCards.Count == 0 &&
+        MassLandDenialCards.Count == 0 &&
+        ExtraTurnCards.Count == 0 &&
+        MassLandDenialCombos.Count == 0 &&
+        ExtraTurnCombos.Count == 0 &&
+        LockCombos.Count == 0 &&
+        ControlAllOpponentsCombos.Count == 0 &&
+        ControlSomeOpponentsCombos.Count == 0 &&
+        SkipTurnsCombos.Count == 0 &&
+        TwoCardCombos.Count == 0;
 }
 
 public class ComboDetail

@@ -40,7 +40,6 @@
 1 Jaws, Relentless Predator (SLD) 2175
 1 Kalain, Reclusive Painter (AFR) 342
 1 Kellogg, Dangerous Mind (PIP) 415
-1 Kiki-Jiki, Mirror Breaker (J22) 79
 1 Knuckles the Echidna (SLD) 2082
 1 Lagomos, Hand of Hatred (DMU) 304
 1 Locke, Treasure Hunter (FIC) 177

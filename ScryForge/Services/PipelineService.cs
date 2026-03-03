@@ -3,7 +3,6 @@ using ScryForge.Models.Scryfall;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using ScryForge.Services.Interfaces;
-using System.Diagnostics;
 
 namespace ScryForge.Services;
 
@@ -109,15 +108,15 @@ public class PipelineService(
 
         LogStep(ref step, totalSteps, "Finding Combo's");
 
-        CommanderSpellbookResult? combosJson = await _commanderSpellbookService.FindMyCombosSimpleAsync(decklistLines);
+        CommanderSpellbookResult? commanderSpellbookResult = await _commanderSpellbookService.FindMyCombosSimpleAsync(decklistLines);
 
-        if (combosJson != null)
+        if (!commanderSpellbookResult!.IsEmpty)
         {
-            DisplayCombos(combosJson);
+            DisplayCombos(commanderSpellbookResult);
         }
         else
         {
-            _logger.LogWarning("No combos were found in Commander Spellbook result.");
+            Console.WriteLine("No combos were found in Commander Spellbook result.");
         }
 
         LogStep(ref step, totalSteps, "Analyzing empty card slots");
@@ -284,21 +283,20 @@ public class PipelineService(
 
         bool isFirstSection = true;
 
-        // Print voor string-lijsten zoals GameChangerCards
         void PrintStringList(string title, List<string> items)
         {
             if (items == null || items.Count == 0) return;
 
             if (!isFirstSection)
-                Console.WriteLine(); // lege regel vóór volgende sectie
+                Console.WriteLine();
 
             Console.ForegroundColor = ConsoleColor.Cyan;
-            Console.WriteLine($"=== {title} ==="); // header
+            Console.WriteLine($"=== {title} ===");
             Console.ResetColor();
 
             foreach (var item in items)
             {
-                Console.WriteLine(); // 1 lege regel vóór item
+                Console.WriteLine();
                 Console.ForegroundColor = ConsoleColor.Green;
                 Console.WriteLine(item);
                 Console.ResetColor();
@@ -307,22 +305,21 @@ public class PipelineService(
             isFirstSection = false;
         }
 
-        // Print voor ComboDetail-lijsten
         void PrintComboList(string title, List<ComboDetail> comboList)
         {
             if (comboList == null || comboList.Count == 0) return;
 
             if (!isFirstSection)
-                Console.WriteLine(); // lege regel vóór volgende sectie
+                Console.WriteLine();
 
             Console.ForegroundColor = ConsoleColor.Cyan;
-            Console.WriteLine($"=== {title} ==="); // header
+            Console.WriteLine($"=== {title} ===");
             Console.ResetColor();
 
             int index = 1;
             foreach (var combo in comboList)
             {
-                Console.WriteLine(); // 1 lege regel vóór combo
+                Console.WriteLine();
                 Console.ForegroundColor = ConsoleColor.Green;
                 Console.WriteLine($"{index++}. {combo.Description}");
                 Console.ResetColor();
@@ -365,12 +362,10 @@ public class PipelineService(
             isFirstSection = false;
         }
 
-        // Eerst string-lijsten
         PrintStringList("Game Changer Cards", combos.GameChangerCards);
         PrintStringList("Mass Land Denial Cards", combos.MassLandDenialCards);
         PrintStringList("Extra Turn Cards", combos.ExtraTurnCards);
 
-        // Daarna combo-lijsten
         PrintComboList("Mass Land Denial Combos", combos.MassLandDenialCombos);
         PrintComboList("Extra Turn Combos", combos.ExtraTurnCombos);
         PrintComboList("Lock Combos", combos.LockCombos);
