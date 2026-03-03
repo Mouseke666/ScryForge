@@ -110,7 +110,7 @@ public class PipelineService(
 
         CommanderSpellbookResult? commanderSpellbookResult = await _commanderSpellbookService.FindMyCombosSimpleAsync(decklistLines);
 
-        if (!commanderSpellbookResult!.IsEmpty)
+        if (commanderSpellbookResult != null && !commanderSpellbookResult!.IsEmpty)
         {
             DisplayCombos(commanderSpellbookResult);
         }
