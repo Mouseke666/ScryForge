@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <PublishTrimmed>false</PublishTrimmed>
+    <OutputType>Exe</OutputType>    
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
@@ -35,6 +34,10 @@
     </Content>
     <PackageReference Include="System.IO.Abstractions" Version="22.1.0" />
     <PackageReference Include="System.Threading.RateLimiting" Version="10.0.3" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Models\Spellbook\" />
+    <Folder Include="Models\Spellbook\Serialization\" />
   </ItemGroup>
   <Target Name="EnsureLogFolder" BeforeTargets="Build;Publish">
     <MakeDir Directories="$(OutputPath)Log" />

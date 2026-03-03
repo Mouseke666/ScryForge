@@ -54,7 +54,7 @@
 1 Overgrown Tomb (ECL) 266
 1 Overgrowth (PLST) 9ED-262
 1 Parcelbeast (IKO) 199
-1 Pemmin's Aura (PLST) SCG-45
+1 Heroic Intervention (CMM) 295
 1 Polluted Delta (MH3) 224
 1 Propaganda (CMD) 55
 1 Rancor (2X2) 156
@@ -99,3 +99,24 @@
 1 Beast (TDRC) 11
 3 Keimi (TNEO) 13
 1 Arcane Signet (ECC) 55
+1 Armaggon, Future Shark (TMT) 58
+1 Bebop & Rocksteady (TMT) 140
+1 Bebop, Skull & Crossbones (TMC) 15
+1 Big Apple, 3 a.m. (TMC) 42
+1 Hidden Hideout (TMC) 43
+1 Leader's Talent (TMT) 13
+1 Madame Null, Power Broker (TMT) 66
+1 Mechanized Ninja Cavalry (TMT) 156
+1 Mouser Foundry (TMT) 96
+1 Ninja Pizza (TMC) 32
+1 Party Dude (TMT) 128
+1 Rat King, Pale Piper (TMC) 19
+1 Rat King, Verminister (TMT) 71
+1 Ravenous Robots (TMT) 106
+1 Rocksteady, Mutant Marauder (TMC) 33
+1 Slash, Reptile Rampager (TMT) 108
+1 Super Shredder (TMT) 83
+1 Afterlife from the Loam (TDC) 25
+1 Army of the Damned (NCC) 242
+1 Blood for the Blood God! (40K) 108
+1 Bone Miser (C19) 15

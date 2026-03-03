@@ -4,6 +4,8 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using ScryForge.Models;
+using ScryForge.Models.Spellbook;
+using ScryForge.Models.Spellbook.Serialization;
 using ScryForge.Services.Interfaces;
 
 namespace ScryForge.Services
@@ -24,7 +26,7 @@ namespace ScryForge.Services
 
         public async Task<string?> FindMyCombosAsync(List<string> decklistLines, List<string>? commanders = null, CancellationToken ct = default)
         {
-            if (decklistLines == null || decklistLines.Count == 0)
+            if (decklistLines is null || decklistLines.Count == 0)
                 return null;
 
             if ((commanders == null || commanders.Count == 0) && decklistLines.Count > 0)
@@ -33,38 +35,60 @@ namespace ScryForge.Services
                 decklistLines = decklistLines.Skip(1).ToList();
             }
 
-            var main = decklistLines.Select(line => new { card = line.Trim(), quantity = 1 }).ToList();
-            var commanderList = (commanders ?? new List<string>()).Select(c => new { card = c.Trim(), quantity = 1 }).ToList();
+            var request = new EstimateBracketRequest
+            {
+                Main = decklistLines
+                    .Where(l => !string.IsNullOrWhiteSpace(l))
+                    .Select(l => new CardEntry
+                    {
+                        Card = l.Trim(),
+                        Quantity = 1
+                    })
+                    .ToList(),
 
-            var payload = new { main, commanders = commanderList };
+                Commanders = (commanders ?? [])
+                    .Where(c => !string.IsNullOrWhiteSpace(c))
+                    .Select(c => new CardEntry
+                    {
+                        Card = c.Trim(),
+                        Quantity = 1
+                    })
+                    .ToList()
+            };
 
             try
             {
                 var response = await _http.PostAsJsonAsync(
                     "https://backend.commanderspellbook.com/estimate-bracket",
-                    payload, ct);
+                    request,
+                    SpellbookJsonContext.Default.EstimateBracketRequest,
+                    ct);
 
                 if (!response.IsSuccessStatusCode)
                 {
                     _logger.LogError("Failed to fetch combos: {Status} {Reason}",
-                        response.StatusCode, response.ReasonPhrase);
+                        response.StatusCode,
+                        response.ReasonPhrase);
+
                     return null;
                 }
 
-                var json = await response.Content.ReadAsStringAsync(ct);
-                return json;
+                return await response.Content.ReadAsStringAsync(ct);
+            }
+            catch (OperationCanceledException)
+            {
+                _logger.LogWarning("find-my-combos request was cancelled.");
+                throw;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Exception when calling find-my-combos ({ex.Message})");
+                _logger.LogError(ex,
+                    "Exception when calling find-my-combos");
                 return null;
             }
         }
 
-        public async Task<CommanderSpellbookResult?> FindMyCombosSimpleAsync(
-    List<string> decklistLines,
-    List<string>? commanders = null,
-    CancellationToken ct = default)
+        public async Task<CommanderSpellbookResult?> FindMyCombosSimpleAsync(List<string> decklistLines, List<string>? commanders = null, CancellationToken ct = default)
         {
             try
             {
