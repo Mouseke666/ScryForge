@@ -9,6 +9,8 @@ using ScryForge.Services.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Console;
 using Microsoft.Extensions.DependencyInjection;
+using ScryForge.Steps.Interfaces;
+using ScryForge.Steps;
 
 internal class Program
 {
@@ -74,7 +76,7 @@ internal class Program
 
         // Return config via stream zodat we JSON niet opnieuw hoeven in te lezen
         return new ConfigurationBuilder()
-            .AddJsonStream(new MemoryStream(System.Text.Encoding.UTF8.GetBytes(json)))
+            .AddJsonStream(new MemoryStream(Encoding.UTF8.GetBytes(json)))
             .Build();
     }
 
@@ -96,6 +98,22 @@ internal class Program
         builder.Services.AddSingleton<ICustomCardService, CustomCardService>();
         builder.Services.AddSingleton<ICommanderSpellbookService, CommanderSpellbookService>();
         builder.Services.AddHostedService<PipelineService>();
+
+        builder.Services.AddTransient<IPipelineStep, CleanDirectoriesStep>();
+        builder.Services.AddTransient<IPipelineStep, FetchCardsStep>();
+        builder.Services.AddTransient<IPipelineStep, CommanderSpellbookStep>();
+        builder.Services.AddTransient<IPipelineStep, EmptySlotsStep>();
+        builder.Services.AddTransient<IPipelineStep, PDFNameStep>();
+        builder.Services.AddTransient<IPipelineStep, DownloadCardImagesStep>();
+        builder.Services.AddTransient<IPipelineStep, UpscalingStep>();
+        builder.Services.AddTransient<IPipelineStep, CopyCustomCardsStep>();
+        builder.Services.AddTransient<IPipelineStep, ParsingCardsStep>();
+        builder.Services.AddTransient<IPipelineStep, ParsingCustomCardsStep>();
+        builder.Services.AddTransient<IPipelineStep, ProcessingCardsStep>();
+        builder.Services.AddTransient<IPipelineStep, GenerateMainPDFStep>();
+        builder.Services.AddTransient<IPipelineStep, CleanUpscaledFolderStep>();
+        builder.Services.AddTransient<IPipelineStep, GenerateFlipsPDFStep>();
+        builder.Services.AddTransient<IPipelineStep, FinalizationStep>();
 
         builder.Services.AddHttpClient("Scryfall", client =>
         {
