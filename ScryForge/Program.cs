@@ -97,6 +97,8 @@ internal class Program
         builder.Services.AddSingleton<IPDFNameService, PDFNameService>();
         builder.Services.AddSingleton<ICustomCardService, CustomCardService>();
         builder.Services.AddSingleton<ICommanderSpellbookService, CommanderSpellbookService>();
+        builder.Services.AddSingleton<ICornerFillService, CornerFillService>();
+
         builder.Services.AddHostedService<PipelineService>();
 
         builder.Services.AddTransient<IPipelineStep, CleanDirectoriesStep>();
@@ -106,6 +108,7 @@ internal class Program
         builder.Services.AddTransient<IPipelineStep, PDFNameStep>();
         builder.Services.AddTransient<IPipelineStep, DownloadCardImagesStep>();
         builder.Services.AddTransient<IPipelineStep, UpscalingStep>();
+        builder.Services.AddTransient<IPipelineStep, CornerFillStep>();
         builder.Services.AddTransient<IPipelineStep, CopyCustomCardsStep>();
         builder.Services.AddTransient<IPipelineStep, ParsingCardsStep>();
         builder.Services.AddTransient<IPipelineStep, ParsingCustomCardsStep>();

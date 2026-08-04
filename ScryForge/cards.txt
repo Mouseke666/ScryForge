@@ -1,4 +1,74 @@
-1 Shadow the Hedgehog (SLD) 2086
-1 Air Shoes (SLD) 2096
-1 Ancient Copper Dragon (CLB) 396
-1 Arcane Signet (FIC) 332
+1 Sabin, Master Monk (FIC) 154
+1 Alena, Kessig Trapper (PLST) CMR-160
+1 Alex Wilder, Runaway (MSC) 677
+1 Ancestral Anger (VOW) 142
+1 Arcane Signet (PLST) OTC-252
+1 Bonders' Enclave (FIC) 376
+1 Brass's Tunnel-Grinder / Tecutlan, the Searing Rift (LCI) 373
+1 Broadside Bombardiers (LCC) 86
+1 Brotherhood Regalia (ACR) 71
+1 Bulk Up (FDN) 80
+1 Cathedral of War (PLST) M13-221
+1 Connecting the Dots (MKM) 118
+1 Conspiracy Theorist (SOC) 240
+1 Containment Construct (SOC) 344
+1 Cool but Rude (TMT) 89
+1 Crash Through (FDN) 620
+1 Culling Dais (2XM) 246
+1 Daily Bugle Building (SPM) 179
+1 Demonic Ruckus (OTJ) 120
+1 Detective's Phoenix (MH3) 116
+1 Doc Ock's Tentacles (SPM) 162
+1 Dreadmaw's Ire (LCI) 147
+1 Faithless Looting (TDC) 213
+1 Fatal Frenzy (PLC) 98
+1 Fellwar Stone (SOC) 347
+1 Fire Diamond (CLB) 313
+1 Fists of Flame (PLST) CMR-414
+1 Flamekin Herald (CMR) 179
+1 Flamewake Phoenix (FDN) 198
+1 Flaming Tyrannosaurus (WHO) 85
+1 Flayer of the Hatebound (FIC) 293
+1 Forge of Heroes (FIC) 395
+1 Fury Charm (MMA) 114
+1 Gimli of the Glittering Caves (LTC) 32
+1 Glóin, Dwarf Emissary (LTR) 360
+1 Grafted Wargear (CMR) 312
+1 Hazoret's Monument (AKH) 229
+1 Hero's Blade (CMR) 464
+1 Impolite Entrance (ECL) 146
+1 Industrial Advancement (NCC) 47
+1 Infiltration Lens (J22) 777
+1 Inti, Seneschal of the Sun (PLCI) 156p
+1 Iraxxa, Empress of Mars (WHO) 89
+1 Ivora, Insatiable Heir (J25) 50
+1 Jocasta, Automaton Avenger (MSC) 108
+1 Kediss, Emberclaw Familiar (CMR) 188
+1 Mind Stone (DMR) 232
+1 Monstrous Rage (WOE) 142
+1 Monument to Endurance (PDFT) 237p
+27 Mountain (ONE) 270
+1 Pick Up the Pace (MSC) 702
+1 Relic Retriever (SOC) 35
+1 Rocket-Powered Goblin Glider (MSC) 825
+1 Rogue's Passage (DDM) 77
+1 Ruby Medallion (MH3) 295
+1 Sai of the Shinobi (PCA) 113
+1 Sarkhan's Unsealing (JMP) 361
+1 Shuko (PLST) BOK-159
+1 Siege Smash (MH3) 136
+1 Skullclamp (BLC) 283
+1 Skyfire Phoenix (C19) 28
+1 Spinerock Knoll (C16) 327
+1 Squee, Goblin Nabob (CMM) 258
+1 Stormrider Rig (DTK) 245
+1 Surtr, Fiery Jötun (ACR) 293
+1 Tenza, Godo's Maul (CHK) 271
+1 Terror of the Peaks (OTJ) 149
+1 Throne of Eldraine (PLST) WOC-28
+1 Tokka & Rahzar, Unsupervised (TMC) 28
+1 Tome of Legends (FIC) 369
+1 Valakut, the Molten Pinnacle (ZEN) 228
+1 Veronica, Dissident Scribe (PIP) 70
+1 War Room (SOC) 422
+1 Witch's Clinic (C21) 81
