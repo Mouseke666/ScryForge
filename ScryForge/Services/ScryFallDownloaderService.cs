@@ -270,8 +270,20 @@ public class ScryFallDownloaderService : IDownloaderService
 
                     using var response = await _http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, ct);
 
+                    // if (response.IsSuccessStatusCode)
+                    //     return await response.Content.ReadAsStringAsync(ct);
+
                     if (response.IsSuccessStatusCode)
-                        return await response.Content.ReadAsStringAsync(ct);
+                    {
+                        var json = await response.Content.ReadAsStringAsync(ct);
+
+                        await File.WriteAllTextAsync(
+                            $"scryfall_{req.SetCode}_{req.CollectorNumber}.json",
+                            json,
+                            ct);
+
+                        return json;
+                    }
 
                     if (response.StatusCode == HttpStatusCode.NotFound) continue;
 

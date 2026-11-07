@@ -12,6 +12,7 @@ namespace ScryForge.Steps
         {
             try
             {
+
                 await cornerFillService.FillRoundedCornersAsync(AppConfig.PDFImagesFolder, AppConfig.PDFImagesFolder);
             }
             catch (Exception ex)
