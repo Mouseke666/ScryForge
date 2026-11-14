@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
 
 namespace ScryForge
@@ -21,6 +21,7 @@ namespace ScryForge
         public static List<UpscalerConfig> Upscalers { get; private set; } = [];
         public static bool AutoFillEmptySlots { get; private set; } = false;
         public static bool AutoUseSuggestedName { get; private set; } = false;
+        public static bool TestUpscalers { get; private set; } = false;
 
         public static void Initialize(IConfiguration config, ILogger? logger = null)
         {
@@ -54,6 +55,23 @@ namespace ScryForge
                     logger?.LogWarning(
                         "Invalid boolean value for Pdf:AutoUseSuggestedName: '{Value}'. Defaulting to false.",
                         autoUseNameValue
+                    );
+                }
+            }
+
+            string? testUpscalersValue = config["TestUpscalers"];
+            if (!string.IsNullOrEmpty(testUpscalersValue))
+            {
+                if (bool.TryParse(testUpscalersValue, out var testUpscalers))
+                {
+                    TestUpscalers = testUpscalers;
+                }
+                else
+                {
+                    TestUpscalers = false;
+                    logger?.LogWarning(
+                        "Invalid boolean value for TestUpscalers: '{Value}'. Defaulting to false.",
+                        testUpscalersValue
                     );
                 }
             }
@@ -117,6 +135,41 @@ namespace ScryForge
                 }
             }
         }
+
+        public static List<UpscalerModelInfo> DiscoverUpscalerModels()
+        {
+            var models = new List<UpscalerModelInfo>();
+            var modelPath = UpscalerPath;
+            var modelsFolder = Path.Combine(modelPath, "models");
+
+            if (!Directory.Exists(modelsFolder))
+                return models;
+
+            foreach (var paramFile in Directory.EnumerateFiles(modelsFolder, "*.param", SearchOption.TopDirectoryOnly))
+            {
+                string modelName = Path.GetFileNameWithoutExtension(paramFile);
+                int scale = ExtractScaleFromModelName(modelName);
+                models.Add(new UpscalerModelInfo { Model = modelName, Scale = scale });
+            }
+
+            return models;
+        }
+
+        private static int ExtractScaleFromModelName(string modelName)
+        {
+            // Check for -xN or _xN suffix (e.g., realesr-animevideov3-x4)
+            var xMatch = System.Text.RegularExpressions.Regex.Match(modelName, @"[-_](\d)x$", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            if (xMatch.Success && int.TryParse(xMatch.Groups[1].Value, out int scale))
+                return scale;
+
+            // Check for 4x prefix or x4 in name (e.g., 4xHFA2k, RealESRGAN_General_x4_v3)
+            if (modelName.StartsWith("4x", StringComparison.OrdinalIgnoreCase) ||
+                System.Text.RegularExpressions.Regex.IsMatch(modelName, @"x4\b", System.Text.RegularExpressions.RegexOptions.IgnoreCase))
+                return 4;
+
+            // Default scale is 4
+            return 4;
+        }
     }
 
     public class UpscalerConfig
@@ -127,9 +180,16 @@ namespace ScryForge
         public YearRangeConfig YearRange { get; set; } = new YearRangeConfig();
     }
 
+    public class UpscalerModelInfo
+    {
+        public string Model { get; set; } = string.Empty;
+        public int Scale { get; set; } = 4;
+    }
+
     public class YearRangeConfig
     {
         public int? From { get; set; }
         public int? To { get; set; }
     }
 }
+

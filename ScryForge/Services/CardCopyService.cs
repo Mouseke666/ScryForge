@@ -51,12 +51,35 @@ namespace ScryForge.Services
         }
 
 
+        /// <summary>
+        /// Finds an image file by name, searching recursively through subdirectories.
+        /// Returns the full path if found, or null/empty string if not found.
+        /// </summary>
+        private static string FindImageFile(string searchRoot, string fileName)
+        {
+            // First try exact match in root (for backward compatibility)
+            string exactPath = Path.Combine(searchRoot, fileName);
+            if (File.Exists(exactPath))
+                return exactPath;
+
+            // Search recursively through all subdirectories
+            var foundFiles = Directory.EnumerateFiles(searchRoot, fileName, SearchOption.AllDirectories).ToList();
+            
+            if (foundFiles.Count > 0)
+            {
+                // Return the first match (could be root or any subfolder)
+                return foundFiles.First();
+            }
+
+            return string.Empty;
+        }
+
         private void ProcessFlipCard(CardInfo card)
         {
-            string frontSource = Path.Combine(AppConfig.PDFImagesFolder, card.FrontFileName);
-            string backSource = Path.Combine(AppConfig.PDFImagesFolder, card.BackFileName);
+            string frontSource = FindImageFile(AppConfig.PDFImagesFolder, card.FrontFileName);
+            string backSource = FindImageFile(AppConfig.PDFImagesFolder, card.BackFileName);
 
-            if (!File.Exists(frontSource) || !File.Exists(backSource))
+            if (string.IsNullOrEmpty(frontSource) || string.IsNullOrEmpty(backSource))
             {
                 _logger.LogWarning("Flip card files not found for: {Name}", card.Name);
                 return;
@@ -101,8 +124,8 @@ namespace ScryForge.Services
 
         private void ProcessSingleSidedCardCopies(CardInfo card)
         {
-            string sourceFile = Path.Combine(AppConfig.PDFImagesFolder, card.FrontFileName);
-            if (!File.Exists(sourceFile))
+            string sourceFile = FindImageFile(AppConfig.PDFImagesFolder, card.FrontFileName);
+            if (string.IsNullOrEmpty(sourceFile))
             {
                 _logger.LogWarning("Single-sided card file not found for: {Name}", card.Name);
                 return;

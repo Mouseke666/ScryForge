@@ -27,6 +27,20 @@ public class PipelineService(IEnumerable<IPipelineStep> steps, ILogger<PipelineS
                 return;
             }
 
+            // Check of deze stap geskipt moet worden bij TestUpscalers
+            bool shouldSkip = false;
+            if (AppConfig.TestUpscalers)
+            {
+                shouldSkip = step is CommanderSpellbookStep or EmptySlotsStep or CopyCustomCardsStep or ParsingCustomCardsStep or ParsingCardsStep or ProcessingCardsStep;
+            }
+
+            if (shouldSkip)
+            {
+                logger.LogInformation("\nStep {Step}/{Total}: {Name} [SKIPPED - TestUpscalers enabled]\n", stepNumber, total, step.Name);
+                stepNumber++;
+                continue;
+            }
+
             logger.LogInformation("\nStep {Step}/{Total}: {Name}\n", stepNumber++, total, step.Name);
 
             var sw = Stopwatch.StartNew();
@@ -56,6 +70,7 @@ public class PipelineService(IEnumerable<IPipelineStep> steps, ILogger<PipelineS
                 lifetime.StopApplication();
                 return;
             }
+
         }
 
         totalSw.Stop();

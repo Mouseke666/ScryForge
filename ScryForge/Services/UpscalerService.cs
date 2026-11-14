@@ -13,6 +13,11 @@ namespace ScryForge.Services
 
         public async Task<bool> RunUpscalerForCardsAsync(IReadOnlyList<ScryfallCard> cards, string model, int scale)
         {
+            return await RunUpscalerForCardsAsync(cards, model, scale, AppConfig.PDFImagesFolder);
+        }
+
+        public async Task<bool> RunUpscalerForCardsAsync(IReadOnlyList<ScryfallCard> cards, string model, int scale, string outputFolder)
+        {
             if (cards == null || cards.Count == 0)
             {
                 _logger.LogInformation("No Scryfall cards to upscale, skipping this step.");
@@ -20,7 +25,6 @@ namespace ScryForge.Services
             }
 
             string inputFolder = AppConfig.ScryForgeDownloaderPath;
-            string outputFolder = AppConfig.PDFImagesFolder;
             Directory.CreateDirectory(outputFolder);
 
             var exe = AppConfig.UpscalerExe;
